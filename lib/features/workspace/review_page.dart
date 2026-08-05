@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme/tokens.dart';
@@ -54,6 +55,21 @@ class _ReviewPageState extends State<ReviewPage> {
       _good++;
     } else {
       _wrong.add(_deck[_index]);
+      // 越错越练：不会的题目自动写回错题本（去重）
+      final nb = Repo.i.notebook(widget.notebookId);
+      final q = _deck[_index];
+      final exists = nb.mistakes.any((m) => m.questionId == q.id);
+      if (!exists) {
+        nb.mistakes.insert(
+          0,
+          Mistake(
+            questionId: q.id,
+            questionJson: jsonEncode(q.toJson()),
+            answeredAt: DateTime.now().toIso8601String(),
+          ),
+        );
+        Repo.i.save();
+      }
     }
     if (_index + 1 >= _deck.length) {
       setState(() {
@@ -479,9 +495,11 @@ class _ReviewPageState extends State<ReviewPage> {
                     color: Tokens.textPrimary),
               ),
               const SizedBox(height: 8),
-              Text('掌握了 $_good 张 · 需巩固 ${_wrong.length} 张',
-                  style: const TextStyle(
-                      fontSize: 13, color: Tokens.textSecondary)),
+              Text(
+                '掌握了 $_good 张 · 需巩固 ${_wrong.length} 张${_wrong.isNotEmpty ? '（已写回错题本）' : ''}',
+                style: const TextStyle(
+                    fontSize: 13, color: Tokens.textSecondary),
+              ),
               const SizedBox(height: 16),
               Row(
                 mainAxisSize: MainAxisSize.min,

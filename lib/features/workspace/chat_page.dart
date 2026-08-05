@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
 import '../../core/theme/tokens.dart';
+import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/hero_art.dart';
 import '../../data/chunker.dart';
@@ -179,6 +180,58 @@ class _ChatPageState extends State<ChatPage> {
         );
       }
     });
+  }
+
+  Future<void> _confirmClear() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(22),
+          child: SizedBox(
+            width: 300,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('清空当前对话？',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Tokens.textPrimary)),
+                const SizedBox(height: 8),
+                const Text('仅清空对话记录，来源与题目不受影响。',
+                    style: TextStyle(
+                        fontSize: 12, color: Tokens.textSecondary)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GlassButton(
+                      label: '取消',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: '清空',
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final nb = Repo.i.notebook(widget.notebookId);
+    nb.chatMessages.clear();
+    Repo.i.save();
+    setState(() {});
   }
 
   void _toast(String msg) {
@@ -472,6 +525,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _inputBar() {
+    final nb = Repo.i.notebook(widget.notebookId);
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       decoration: BoxDecoration(
@@ -489,6 +543,18 @@ class _ChatPageState extends State<ChatPage> {
       ),
       child: Row(
         children: [
+          if (nb.chatMessages.isNotEmpty)
+            GestureDetector(
+              onTap: _confirmClear,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Tooltip(
+                  message: '清空对话',
+                  child: Icon(Icons.delete_sweep_rounded,
+                      size: 20, color: Tokens.textTertiary),
+                ),
+              ),
+            ),
           Expanded(
             child: TextField(
               controller: _controller,
