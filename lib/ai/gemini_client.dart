@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../data/settings_store.dart';
+import '../utils/crash_log.dart';
 
 class AiMessage {
   final String role; // user | model
@@ -11,7 +12,11 @@ class AiMessage {
 }
 
 /// Gemini REST 客户端（generativelanguage.googleapis.com v1beta）
-/// 官方 Dart SDK 已弃用，直连 REST + SSE 流式，支持 responseSchema 强约束。
+/// 稳定性设计：
+/// - SSE 行缓冲：半包/心跳/多行 data 容错，坏事件自愈不拖垮会话
+/// - finishReason 全覆盖：STOP 才算成功；MAX_TOKENS/SAFETY/RECITATION 转友好错误
+/// - 仅对 408/429/5xx 做指数退避重试（尊重 Retry-After）
+/// - 每请求 CancelToken，页面销毁可立即中断
 class GeminiClient {
   final SettingsStore settings;
   final Dio _dio;
@@ -19,7 +24,8 @@ class GeminiClient {
   GeminiClient(this.settings)
       : _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 120),
+          // SSE 长流不做按字节超时，改由应用层/重试兜底
+          receiveTimeout: null,
           headers: {'Content-Type': 'application/json'},
         ));
 
@@ -41,7 +47,8 @@ class GeminiClient {
     };
   }
 
-  /// 流式生成，逐段吐出文本增量
+  /// 流式生成，逐段吐出文本增量。
+  /// 瞬时错误自动指数退避重试（最多 3 次）。
   Stream<String> streamGenerate({
     required List<AiMessage> contents,
     String? system,
@@ -49,6 +56,7 @@ class GeminiClient {
     int maxTokens = 8192,
     Map<String, dynamic>? responseSchema,
     List<String>? stopSequences,
+    CancelToken? cancelToken,
   }) async* {
     if (!hasKey) {
       throw Exception('未配置 API Key，请先到「设置」填写 Gemini API Key');
@@ -65,52 +73,132 @@ class GeminiClient {
       },
     };
 
-    final url =
-        '$_base/models/${settings.model}:streamGenerateContent?alt=sse';
+    final url = '$_base/models/${settings.model}:streamGenerateContent?alt=sse';
     final body = _body(
       contents: contents,
       system: system,
       generationConfig: generationConfig,
     );
 
-    try {
-      final response = await _dio.post<ResponseBody>(
-        url,
-        data: jsonEncode(body),
-        options: Options(
-          responseType: ResponseType.stream,
-          headers: {'x-goog-api-key': settings.apiKey},
-        ),
-      );
-
-      final stream = utf8
-          .decoder
-          .bind(response.data!.stream)
-          .transform(const LineSplitter());
-
-      await for (final line in stream) {
-        final trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) continue;
-        final payload = trimmed.substring(5).trim();
-        if (payload.isEmpty || payload == '[DONE]') continue;
-
-        final dynamic json;
-        try {
-          json = jsonDecode(payload);
-        } catch (_) {
+    const maxAttempts = 3;
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        yield* _streamOnce(url, body, cancelToken);
+        return;
+      } on DioException catch (e) {
+        if (CancelToken.isCancel(e)) {
+          throw Exception('已取消');
+        }
+        final code = e.response?.statusCode;
+        final retryable =
+            code == 408 || code == 429 || (code != null && code >= 500);
+        if (retryable && attempt < maxAttempts - 1) {
+          final retryAfter = _retryAfter(e.response?.headers);
+          final delay = retryAfter ??
+              Duration(seconds: 1 << attempt) +
+                  Duration(milliseconds: 100 + (attempt * 137) % 400);
+          CrashLog.log('Gemini 瞬时错误 HTTP $code，第 ${attempt + 2} 次尝试');
+          await Future.delayed(delay);
           continue;
         }
-
-        if (json is Map<String, dynamic> && json['error'] != null) {
-          final err = json['error'];
-          throw Exception(_errorText(err));
-        }
-
-        final text = _extractText(json);
-        if (text != null && text.isNotEmpty) yield text;
+        throw Exception(_dioError(e));
       }
-    } on DioException catch (e) {
-      throw Exception(_dioError(e));
+    }
+  }
+
+  Stream<String> _streamOnce(
+      String url, Map<String, dynamic> body, CancelToken? cancelToken) async* {
+    final response = await _dio.post<ResponseBody>(
+      url,
+      data: jsonEncode(body),
+      options: Options(
+        responseType: ResponseType.stream,
+        headers: {'x-goog-api-key': settings.apiKey},
+      ),
+      cancelToken: cancelToken,
+    );
+
+    final stream = utf8
+        .decoder
+        .bind(response.data!.stream)
+        .transform(const LineSplitter());
+
+    final payload = <String>[];
+    String? lastFinishReason;
+    var sawText = false;
+
+    // 局部函数不可 yield，改为返回本次事件解析出的文本片段列表
+    List<String> flush() {
+      if (payload.isEmpty) return const [];
+      final raw = payload.join('\n');
+      payload.clear();
+      if (raw.isEmpty || raw == '[DONE]') return const [];
+
+      final dynamic json;
+      try {
+        json = jsonDecode(raw);
+      } catch (_) {
+        return const []; // 半包自愈：跳过坏事件继续读流
+      }
+      if (json is! Map<String, dynamic>) return const [];
+
+      if (json['error'] != null) {
+        throw Exception(_errorText(json['error']));
+      }
+
+      final pf = json['promptFeedback'];
+      if (pf is Map && pf['blockReason'] != null) {
+        throw Exception('内容被安全策略拦截（${pf['blockReason']}），请检查材料或调整提示词');
+      }
+
+      final text = _extractText(json);
+      if (text != null && text.isNotEmpty) sawText = true;
+
+      final cands = json['candidates'];
+      if (cands is List && cands.isNotEmpty && cands[0] is Map) {
+        final fr = cands[0]['finishReason'];
+        if (fr is String) lastFinishReason = fr;
+      }
+      return text == null ? const [] : [text];
+    }
+
+    try {
+      await for (final line in stream) {
+        if (cancelToken?.isCancelled ?? false) {
+          throw DioException.connectionError(
+            requestOptions: RequestOptions(path: url),
+            reason: '已取消',
+          );
+        }
+        final t = line.trim();
+        if (t.isEmpty) {
+          for (final x in flush()) {
+            yield x;
+          }
+          continue;
+        }
+        if (t.startsWith(':')) continue; // 心跳注释
+        if (t.startsWith('data:')) payload.add(t.substring(5).trim());
+      }
+      for (final x in flush()) {
+        yield x;
+      }
+
+      switch (lastFinishReason) {
+        case 'MAX_TOKENS':
+          throw Exception('输出达到 token 上限被截断，请减少题量或增加输出限制后重试');
+        case 'SAFETY':
+          throw Exception('生成内容被安全过滤，请调整提示词后重试');
+        case 'RECITATION':
+          throw Exception('生成内容疑似大段照抄，请精简材料后重试');
+        case null:
+          if (!sawText) throw Exception('流式响应为空或连接中断，请重试');
+      }
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      // flush() 内抛出的业务异常直接上抛
+      rethrow;
     }
   }
 
@@ -133,7 +221,6 @@ class GeminiClient {
   }
 
   /// 拉取当前 Key 可见的 Gemini 模型列表（`GET /v1beta/models`）
-  /// 结果按「Pro/推理 → Flash → Flash-Lite」排序，供设置页挑选。
   Future<List<String>> listModels() async {
     if (!hasKey) return const [];
     try {
@@ -164,7 +251,7 @@ class GeminiClient {
     }
   }
 
-  /// 探测某个模型是否可用，返回 (模型, 是否成功, 提示)
+  /// 探测某个模型是否可用
   Future<(String, bool, String)> probeModel(String model) async {
     try {
       await generateOnce(
@@ -177,7 +264,7 @@ class GeminiClient {
     }
   }
 
-  /// 探测 Pro 订阅：依次探测 pro 系模型，返回可用的 Pro 模型列表
+  /// 依次探测候选模型，返回可用的（Pro 优先）
   Future<List<String>> detectProModels() async {
     const candidates = [
       'gemini-3.1-pro-preview',
@@ -194,9 +281,7 @@ class GeminiClient {
           temperature: 0,
         );
         ok.add(m);
-      } catch (_) {
-        // 探测失败继续下一个
-      }
+      } catch (_) {}
     }
     return ok;
   }
@@ -219,14 +304,27 @@ class GeminiClient {
     });
   }
 
+  Duration? _retryAfter(Headers? headers) {
+    if (headers == null) return null;
+    final v = headers.value('retry-after');
+    if (v == null || v.isEmpty) return null;
+    final seconds = int.tryParse(v);
+    if (seconds != null) return Duration(seconds: seconds.clamp(1, 60));
+    final date = DateTime.tryParse(v);
+    if (date != null) {
+      final diff = date.difference(DateTime.now());
+      if (diff.inSeconds > 0 && diff.inSeconds <= 60) return diff;
+    }
+    return null;
+  }
+
   String? _extractText(dynamic json) {
     try {
       final candidates = json['candidates'] as List?;
       if (candidates == null || candidates.isEmpty) return null;
       final parts = candidates[0]['content']?['parts'] as List?;
       if (parts == null || parts.isEmpty) return null;
-      final text = parts[0]['text'] as String?;
-      return text;
+      return parts[0]['text'] as String?;
     } catch (_) {
       return null;
     }
@@ -241,6 +339,7 @@ class GeminiClient {
   }
 
   String _dioError(DioException e) {
+    if (CancelToken.isCancel(e)) return '请求已取消';
     final code = e.response?.statusCode;
     final body = e.response?.data;
     if (body != null) {
@@ -260,7 +359,7 @@ class GeminiClient {
       case 404:
         return '模型不存在 (HTTP 404)：${settings.model}';
       case 429:
-        return '触发速率限制 (HTTP 429)，稍后再试，或升级订阅档位';
+        return '触发速率限制 (HTTP 429)，请稍后再试，或升级订阅档位';
       default:
         return '网络请求失败：$code ${e.message ?? ''}';
     }

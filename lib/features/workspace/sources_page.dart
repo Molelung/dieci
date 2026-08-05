@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -120,10 +121,13 @@ class _SourcesPageState extends State<SourcesPage> {
       return;
     }
     if (dir == null || !mounted) return;
+    final vaultPath = dir;
 
     setState(() => _importing = true);
     try {
-      final result = await ObsidianImporter.scanVault(dir);
+      // 大目录遍历放到后台 isolate，避免 UI 卡顿/ANR
+      final result =
+          await Isolate.run(() => ObsidianImporter.scanVault(vaultPath));
       if (result.files.isEmpty) {
         _toast('该目录下没有找到 .md 笔记');
         return;

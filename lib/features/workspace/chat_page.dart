@@ -85,8 +85,7 @@ class _ChatPageState extends State<ChatPage> {
           if (!mounted) return;
           buf.write(delta);
           modelMsg.text = buf.toString();
-          setState(() {});
-          _scrollToBottom();
+          _scheduleRefresh();
         },
         onError: (Object e) {
           if (!mounted) return;
@@ -111,6 +110,20 @@ class _ChatPageState extends State<ChatPage> {
       if (mounted && _streaming) setState(() => _streaming = false);
       Repo.i.save();
     }
+  }
+
+  bool _dirty = false;
+
+  /// 渲染节流：高频 token 到达合并为一帧一次刷新
+  void _scheduleRefresh() {
+    if (_dirty) return;
+    _dirty = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _dirty = false;
+      if (!mounted) return;
+      setState(() {});
+      _scrollToBottom();
+    });
   }
 
   void _stop() {

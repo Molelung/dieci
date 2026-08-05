@@ -71,6 +71,7 @@ class _OutlinePageState extends State<OutlinePage> {
     Repo.i.save();
 
     final buf = StringBuffer();
+    var lastCount = 0;
     try {
       _sub = client
           .streamGenerate(
@@ -83,10 +84,14 @@ class _OutlinePageState extends State<OutlinePage> {
         (delta) {
           if (!mounted) return;
           buf.write(delta);
+          final nodes = _parseOutline(buf.toString());
+          final count = _countNodes(nodes);
+          if (count == lastCount) return; // 渲染节流：无新节点不重建
+          lastCount = count;
           setState(() {
             nb.outline
               ..clear()
-              ..addAll(_parseOutline(buf.toString()));
+              ..addAll(nodes);
           });
         },
         onError: (Object e) {

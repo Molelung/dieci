@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
+import '../utils/crash_log.dart';
 import 'chunker.dart';
 import 'storage.dart';
 
@@ -12,15 +13,19 @@ class Repo extends ChangeNotifier {
 
   Future<void> init() async {
     final file = await Storage.notebooksFile();
-    if (file.existsSync()) {
+    final content = await Storage.readWithRecovery(file);
+    if (content != null) {
       try {
-        final data = jsonDecode(await file.readAsString());
+        final data = jsonDecode(content);
         notebooks = (data as List)
             .map((e) => Notebook.fromJson(e as Map<String, dynamic>))
             .toList();
-      } catch (_) {
+      } catch (e) {
+        CrashLog.log('notebooks 解析失败: $e');
         notebooks = [];
       }
+    } else {
+      notebooks = [];
     }
     notifyListeners();
   }
@@ -77,7 +82,8 @@ class Repo extends ChangeNotifier {
 
   void save() async {
     final file = await Storage.notebooksFile();
-    await file.writeAsString(
+    await Storage.writeAtomic(
+      file,
       jsonEncode(notebooks.map((e) => e.toJson()).toList()),
     );
   }
