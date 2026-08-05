@@ -511,6 +511,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
   /// 解析官方 `GET /v1beta/models` 接口 + 探测 Pro 模型可用性
   Future<void> _detect() async {
+    if (_keyController.text.trim().isEmpty) {
+      setState(() {
+        _detectMsg = '请先在上方填写 API Key，再解析官方接口';
+        _models = [];
+        _proModels = [];
+      });
+      return;
+    }
     final client = GeminiClient(SettingsStore.i);
     setState(() {
       _detecting = true;
