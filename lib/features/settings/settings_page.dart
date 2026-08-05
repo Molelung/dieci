@@ -27,6 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _modelController = TextEditingController();
   bool _saved = false;
   bool _testing = false;
+  bool _showKey = false;
   String? _testResult;
   bool _detecting = false;
   String? _detectMsg;
@@ -456,7 +457,28 @@ class _SettingsPageState extends State<SettingsPage> {
                       label: 'API Key',
                       hint: 'AIza…',
                       icon: Icons.vpn_key_rounded,
-                      obscure: true,
+                      obscure: !_showKey,
+                    ),
+                    const SizedBox(height: 6),
+                    GestureDetector(
+                      onTap: () => setState(() => _showKey = !_showKey),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _showKey
+                                ? Icons.visibility_off_rounded
+                                : Icons.visibility_rounded,
+                            size: 14,
+                            color: Tokens.textTertiary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(_showKey ? '隐藏 Key' : '显示 Key',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Tokens.textTertiary)),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     GlassInput(

@@ -560,6 +560,22 @@ class _ReviewPageState extends State<ReviewPage> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (_wrong.isEmpty && _scopeMistakes)
+                    GlassButton(
+                      label: '已掌握错题全部移出',
+                      icon: Icons.cleaning_services_rounded,
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () {
+                        final nb = Repo.i.notebook(widget.notebookId);
+                        final ids = _deck.map((q) => q.id).toSet();
+                        final before = nb.mistakes.length;
+                        nb.mistakes
+                            .removeWhere((m) => ids.contains(m.questionId));
+                        Repo.i.save();
+                        _toast('已移出 ${before - nb.mistakes.length} 道已掌握错题');
+                      },
+                    ),
+                  if (_wrong.isEmpty && _scopeMistakes) const SizedBox(width: 10),
                   GlassButton(
                     label: '再来一轮',
                     icon: Icons.refresh_rounded,
