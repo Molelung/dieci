@@ -251,7 +251,9 @@ class NotebooksPage extends StatelessWidget {
       itemCount: notebooks.length,
       itemBuilder: (context, i) {
         final nb = notebooks[i] as dynamic;
-        return GlassCard(
+        return GestureDetector(
+          onLongPress: () => _renameNotebook(context, nb),
+          child: GlassCard(
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
@@ -313,9 +315,65 @@ class NotebooksPage extends StatelessWidget {
               ),
             ],
           ),
-        );
+        ),
+      );
       },
     );
+  }
+
+  Future<void> _renameNotebook(BuildContext context, dynamic nb) async {
+    final controller = TextEditingController(text: nb.name as String);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(22),
+          child: SizedBox(
+            width: 340,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('重命名笔记本',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Tokens.textPrimary)),
+                const SizedBox(height: 14),
+                GlassInput(controller: controller, label: '名称'),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GlassButton(
+                      label: '取消',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: '保存',
+                      icon: Icons.check_rounded,
+                      onPressed: () {
+                        final name = controller.text.trim();
+                        if (name.isEmpty) return;
+                        Navigator.pop(ctx, name);
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (newName != null && newName.isNotEmpty) {
+      Repo.i.renameNotebook(nb.id as String, newName);
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context, dynamic nb) async {

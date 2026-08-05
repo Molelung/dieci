@@ -50,6 +50,13 @@ class Repo extends ChangeNotifier {
     notifyListeners();
   }
 
+  void renameNotebook(String id, String name) {
+    final nb = notebook(id);
+    nb.name = name;
+    save();
+    notifyListeners();
+  }
+
   Notebook notebook(String id) {
     if (notebooks.isEmpty) {
       return Notebook(id: 'empty', name: '空', gradientIndex: 0, createdAt: '');

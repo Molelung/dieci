@@ -175,7 +175,7 @@ class _SettingsPageState extends State<SettingsPage> {
           blur: 30,
           padding: const EdgeInsets.all(20),
           child: SizedBox(
-            width: 560,
+            width: (MediaQuery.sizeOf(context).width * 0.9).clamp(0.0, 560),
             height: 420,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
