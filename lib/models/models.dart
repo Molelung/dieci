@@ -135,6 +135,7 @@ class OutlineNode {
   String title;
   int depth;
   String status; // generating | done
+  List<int> refs; // 关联的材料分块索引
   List<OutlineNode> children;
 
   OutlineNode({
@@ -142,14 +143,17 @@ class OutlineNode {
     required this.title,
     required this.depth,
     this.status = 'done',
+    List<int>? refs,
     List<OutlineNode>? children,
-  }) : children = children ?? [];
+  })  : refs = refs ?? [],
+        children = children ?? [];
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,
         'depth': depth,
         'status': status,
+        'refs': refs,
         'children': children.map((e) => e.toJson()).toList(),
       };
 
@@ -158,6 +162,7 @@ class OutlineNode {
         title: json['title'] as String? ?? '',
         depth: (json['depth'] as num?)?.toInt() ?? 1,
         status: json['status'] as String? ?? 'done',
+        refs: (json['refs'] as List? ?? []).cast<int>(),
         children: (json['children'] as List? ?? [])
             .map((e) => OutlineNode.fromJson(e as Map<String, dynamic>))
             .toList(),

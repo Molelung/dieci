@@ -153,6 +153,7 @@ class _OutlinePageState extends State<OutlinePage> {
               _status = '未解析到大纲，请重试';
             } else {
               _status = '大纲生成完成（${_countNodes(nb.outline)} 个节点）';
+              _computeRefs(nb);
             }
           });
           Repo.i.save();
@@ -269,11 +270,135 @@ class _OutlinePageState extends State<OutlinePage> {
           title: n.title,
           depth: n.depth,
           status: n.status,
+          refs: n.refs,
           children: children,
         ));
       }
     }
     return result;
+  }
+
+  /// 大纲节点 ↔ 材料分块关联：按节点标题关键词为每个节点匹配出处
+  void _computeRefs(Notebook nb) {
+    final all = nb.sources
+        .expand((s) => s.chunks ?? <Chunk>[])
+        .toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    if (all.isEmpty) return;
+
+    void walk(List<OutlineNode> nodes) {
+      for (final n in nodes) {
+        final words = n.title
+            .split(RegExp(r'[\s,，。.;；、/()（）:：-]+'))
+            .where((w) => w.length >= 2)
+            .toList();
+        if (words.isNotEmpty) {
+          final scored = <int, double>{};
+          for (var i = 0; i < all.length; i++) {
+            var s = 0.0;
+            for (final w in words) {
+              if (all[i].text.contains(w)) s += w.length * 1.0;
+            }
+            if (s > 0) scored[i] = s;
+          }
+          final sorted = scored.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+          n.refs = sorted.take(3).map((e) => e.key).toList();
+        } else {
+          n.refs = [];
+        }
+        walk(n.children);
+      }
+    }
+
+    walk(nb.outline);
+  }
+
+  void _showNodeRefs(Notebook nb, OutlineNode node) {
+    final all = nb.sources
+        .expand((s) => s.chunks ?? <Chunk>[])
+        .toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(20),
+          child: SizedBox(
+            width: (MediaQuery.sizeOf(context).width * 0.9).clamp(0.0, 520),
+            height: 360,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.article_rounded,
+                        size: 18, color: Tokens.brandBlue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(node.title,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Tokens.textPrimary)),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(ctx),
+                      child: const Icon(Icons.close_rounded,
+                          size: 18, color: Tokens.textTertiary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      for (final idx in node.refs)
+                        if (idx < all.length)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: Tokens.brandBlue
+                                        .withValues(alpha: 0.10)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${all[idx].sourceName ?? '材料'} · #[${idx}]',
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: Tokens.brandBlue)),
+                                  const SizedBox(height: 5),
+                                  Text(all[idx].text,
+                                      maxLines: 8,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize: 12.5,
+                                          height: 1.6,
+                                          color: Tokens.textSecondary)),
+                                ],
+                              ),
+                            ),
+                          ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _toast(String msg) {
@@ -387,6 +512,7 @@ class _OutlinePageState extends State<OutlinePage> {
                                 ? _collapsed
                                 : const <String>{},
                             level: 0,
+                            onRefsRequest: (n) => _showNodeRefs(nb, n),
                             onToggle: () {
                               setState(() {});
                               _persistSelection(nb);
@@ -449,6 +575,7 @@ class _OutlineNodeTile extends StatelessWidget {
   final Set<String> collapsed;
   final int level;
   final VoidCallback onToggle;
+  final ValueChanged<OutlineNode>? onRefsRequest;
 
   const _OutlineNodeTile({
     required this.node,
@@ -456,6 +583,7 @@ class _OutlineNodeTile extends StatelessWidget {
     required this.collapsed,
     required this.level,
     required this.onToggle,
+    this.onRefsRequest,
   });
 
   @override
@@ -511,6 +639,16 @@ class _OutlineNodeTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onRefsRequest != null && node.refs.isNotEmpty)
+                  GestureDetector(
+                    onTap: () => onRefsRequest!(node),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Icon(Icons.article_rounded,
+                          size: 16,
+                          color: Tokens.brandBlue.withValues(alpha: 0.8)),
+                    ),
+                  ),
                 if (hasChildren)
                   GestureDetector(
                     onTap: () {
@@ -541,6 +679,7 @@ class _OutlineNodeTile extends StatelessWidget {
               collapsed: collapsed,
               level: level + 1,
               onToggle: onToggle,
+              onRefsRequest: onRefsRequest,
             ),
       ],
     );
