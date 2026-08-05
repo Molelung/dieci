@@ -64,6 +64,10 @@ class _ChatPageState extends State<ChatPage> {
       text: text,
       createdAt: DateTime.now().toIso8601String(),
     ));
+    // 对话历史上限保护：超 200 条裁剪最旧的
+    if (nb.chatMessages.length > 200) {
+      nb.chatMessages.removeRange(0, nb.chatMessages.length - 200);
+    }
 
     final chunks = nb.sources
         .expand((s) => s.chunks ?? <Chunk>[])
