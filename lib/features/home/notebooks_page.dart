@@ -304,7 +304,7 @@ class NotebooksPage extends StatelessWidget {
                     _stat('${(nb.mistakes as List).length}', '错题'),
                     const Spacer(),
                     GestureDetector(
-                      onTap: () => Repo.i.deleteNotebook(nb.id as String),
+                      onTap: () => _confirmDelete(context, nb),
                       child: Icon(Icons.delete_outline_rounded,
                           size: 18, color: Tokens.textTertiary.withValues(alpha: 0.7)),
                     ),
@@ -316,6 +316,55 @@ class NotebooksPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, dynamic nb) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(22),
+          child: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('删除笔记本？',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Tokens.textPrimary)),
+                const SizedBox(height: 8),
+                Text('「${nb.name}」及其来源、题目、错题将被删除，且无法恢复。',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 12.5, height: 1.6, color: Tokens.textSecondary)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GlassButton(
+                      label: '取消',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: '删除',
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (ok == true) Repo.i.deleteNotebook(nb.id as String);
   }
 
   Widget _stat(String value, String label) {

@@ -153,6 +153,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _sediment(Notebook nb, ChatMessage msg) {
+    if (msg.text.trim().isEmpty) {
+      _toast('这条回答是空的，无法沉淀');
+      return;
+    }
     Repo.i.addSource(
       nb,
       name: '对话沉淀 ${msg.createdAt.substring(11, 19)}',

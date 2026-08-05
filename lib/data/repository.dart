@@ -10,6 +10,7 @@ class Repo extends ChangeNotifier {
   static final Repo i = Repo._();
 
   List<Notebook> notebooks = [];
+  Future<void> _writeQueue = Future.value();
 
   Future<void> init() async {
     final file = await Storage.notebooksFile();
@@ -80,7 +81,12 @@ class Repo extends ChangeNotifier {
     notifyListeners();
   }
 
-  void save() async {
+  /// 串行写入队列：避免高频率改动时并发写同一文件导致损坏
+  void save() {
+    _writeQueue = _writeQueue.then((_) => _doSave());
+  }
+
+  Future<void> _doSave() async {
     final file = await Storage.notebooksFile();
     await Storage.writeAtomic(
       file,

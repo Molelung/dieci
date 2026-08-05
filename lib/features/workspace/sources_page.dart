@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
@@ -396,10 +397,24 @@ class _SourcesPageState extends State<SourcesPage> {
                           color: Tokens.brandBlue.withValues(alpha: 0.10)),
                     ),
                     child: SingleChildScrollView(
-                      child: Text(
-                        s.rawText,
-                        style: const TextStyle(
-                            fontSize: 13, height: 1.6, color: Tokens.textSecondary),
+                      child: MarkdownBody(
+                        data: s.rawText,
+                        styleSheet: MarkdownStyleSheet(
+                          p: const TextStyle(
+                              fontSize: 13, height: 1.6, color: Tokens.textSecondary),
+                          h1: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Tokens.textPrimary),
+                          h2: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Tokens.textPrimary),
+                          h3: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Tokens.textPrimary),
+                        ),
                       ),
                     ),
                   ),
