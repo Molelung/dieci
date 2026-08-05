@@ -849,7 +849,10 @@ class _PracticePageState extends State<PracticePage> {
               if (q.difficulty > 0.33 && q.difficulty <= 0.66)
                 const Text('中等', style: TextStyle(fontSize: 10, color: Tokens.warn)),
               const Spacer(),
-              if (submitted)
+              if (submitted && !answered)
+                const Text('未作答',
+                    style: TextStyle(fontSize: 11, color: Tokens.textTertiary))
+              else if (submitted)
                 Icon(
                   isCorrect
                       ? Icons.check_circle_rounded
