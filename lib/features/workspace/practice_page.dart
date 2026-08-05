@@ -49,6 +49,7 @@ class _PracticePageState extends State<PracticePage> {
   int _round = 0;
   bool _generating = false;
   bool _presetMode = false;
+  bool _bankMode = false;
   CancelToken? _cancel;
   Timer? _timer;
   Stopwatch _stopwatch = Stopwatch();
@@ -211,9 +212,32 @@ class _PracticePageState extends State<PracticePage> {
     return sb.toString();
   }
 
+  Future<void> _practiceFromBank(Notebook nb) async {
+    if (nb.questions.isEmpty) {
+      _toast('题库为空，请先「生成题目」');
+      return;
+    }
+    final pool = List<Question>.from(nb.questions)..shuffle();
+    setState(() {
+      _questions = pool.take(20).toList();
+      _answers = {};
+      _selfAssessed = {};
+      _submitted = false;
+      _bankMode = true;
+      _presetMode = false;
+      _scopeName = '离线题库（${_questions.length} 题）';
+      _errors = [];
+    });
+    _startTimer();
+  }
+
   Future<void> _generate() async {
     if (_presetMode) {
       _toast('错题重做模式已锁定，直接作答即可');
+      return;
+    }
+    if (_bankMode) {
+      _toast('题库练习模式无需生成，直接作答即可');
       return;
     }
     if (_types.isEmpty) {
@@ -502,6 +526,34 @@ class _PracticePageState extends State<PracticePage> {
         ),
       );
     }
+    if (_bankMode) {
+      return GlassCard(
+        margin: const EdgeInsets.only(bottom: 14),
+        child: Row(
+          children: [
+            const Icon(Icons.library_books_rounded,
+                size: 20, color: Tokens.brandCyan),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '离线题库练习：共 ${_questions.length} 题（不消耗 AI 额度），答错的自动进错题本。',
+                style: const TextStyle(
+                    fontSize: 13, color: Tokens.textSecondary),
+              ),
+            ),
+            GlassButton(
+              label: '退出题库模式',
+              style: GlassButtonStyle.ghost,
+              onPressed: () => setState(() {
+                _bankMode = false;
+                _questions = [];
+                _submitted = false;
+              }),
+            ),
+          ],
+        ),
+      );
+    }
     return GlassCard(
       margin: const EdgeInsets.only(bottom: 14),
       child: Column(
@@ -637,6 +689,17 @@ class _PracticePageState extends State<PracticePage> {
                 loading: _generating,
                 onPressed: _generating ? null : _generate,
               ),
+              if (!_generating && Repo.i.notebook(widget.notebookId).questions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: GlassButton(
+                    label: '离线题库',
+                    icon: Icons.library_books_rounded,
+                    style: GlassButtonStyle.outline,
+                    onPressed: () =>
+                        _practiceFromBank(Repo.i.notebook(widget.notebookId)),
+                  ),
+                ),
             ],
           ),
         ],
