@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
 import '../../core/theme/tokens.dart';
@@ -451,28 +452,46 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 const SizedBox(height: 6),
               ],
-              Text.rich(
-                isUser
-                    ? TextSpan(
-                        text: m.text,
-                        style: const TextStyle(
-                            fontSize: 13.5,
-                            height: 1.6,
-                            color: Tokens.textPrimary))
-                    : TextSpan(
-                        children: [
-                          ..._buildSpans(m.text),
-                          if (_streaming && m.text.isNotEmpty)
-                            TextSpan(
-                              text: '▍',
-                              style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Tokens.brandBlue),
-                            ),
-                        ],
-                      ),
-              ),
+              if (!isUser && !_streaming && !m.text.contains(RegExp(r'\[\d+\]')))
+                MarkdownBody(
+                  data: m.text,
+                  selectable: true,
+                  styleSheet: MarkdownStyleSheet(
+                    p: const TextStyle(
+                        fontSize: 13.5, height: 1.6, color: Tokens.textPrimary),
+                    strong: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Tokens.textPrimary),
+                    listBullet: const TextStyle(color: Tokens.textPrimary),
+                    code: const TextStyle(
+                        fontSize: 12,
+                        color: Tokens.brandBlue,
+                        backgroundColor: Color(0x14000000)),
+                  ),
+                )
+              else
+                Text.rich(
+                  isUser
+                      ? TextSpan(
+                          text: m.text,
+                          style: const TextStyle(
+                              fontSize: 13.5,
+                              height: 1.6,
+                              color: Tokens.textPrimary))
+                      : TextSpan(
+                          children: [
+                            ..._buildSpans(m.text),
+                            if (_streaming && m.text.isNotEmpty)
+                              TextSpan(
+                                text: '▍',
+                                style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Tokens.brandBlue),
+                              ),
+                          ],
+                        ),
+                ),
             ],
           ),
         ),

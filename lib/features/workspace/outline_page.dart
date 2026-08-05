@@ -31,6 +31,7 @@ class _OutlinePageState extends State<OutlinePage> {
   final _selected = <String>{};
   final _collapsed = <String>{};
   final _scroll = ScrollController();
+  String _outlineQuery = '';
   CancelToken? _cancel;
   StreamSubscription<String>? _sub;
   bool _generating = false;
@@ -256,6 +257,25 @@ class _OutlinePageState extends State<OutlinePage> {
     return sb.toString();
   }
 
+  static List<OutlineNode> _filterNodes(List<OutlineNode> nodes, String q) {
+    if (q.isEmpty) return nodes;
+    final result = <OutlineNode>[];
+    for (final n in nodes) {
+      final matched = n.title.toLowerCase().contains(q);
+      final children = _filterNodes(n.children, q);
+      if (matched || children.isNotEmpty) {
+        result.add(OutlineNode(
+          id: n.id,
+          title: n.title,
+          depth: n.depth,
+          status: n.status,
+          children: children,
+        ));
+      }
+    }
+    return result;
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -333,6 +353,16 @@ class _OutlinePageState extends State<OutlinePage> {
                       onPressed: () => _copyOutline(nb),
                     ),
                   ],
+                  if (hasOutline)
+                    SizedBox(
+                      width: 180,
+                      child: GlassInput(
+                        hint: '过滤节点…',
+                        icon: Icons.filter_alt_rounded,
+                        onChanged: (v) => setState(
+                            () => _outlineQuery = v.trim().toLowerCase()),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -349,11 +379,13 @@ class _OutlinePageState extends State<OutlinePage> {
                       controller: _scroll,
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                       children: [
-                        for (final node in nb.outline)
+                        for (final node in _filterNodes(nb.outline, _outlineQuery))
                           _OutlineNodeTile(
                             node: node,
                             selected: _selected,
-                            collapsed: _collapsed,
+                            collapsed: _outlineQuery.isEmpty
+                                ? _collapsed
+                                : const <String>{},
                             level: 0,
                             onToggle: () {
                               setState(() {});
