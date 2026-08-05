@@ -331,6 +331,143 @@ class _SettingsPageState extends State<SettingsPage> {
     _toast('已清除全部数据');
   }
 
+  Future<void> _viewBackups() async {
+    final dir = await Storage.dir();
+    final bkDir = Directory(
+        '${dir.path}${Platform.pathSeparator}backups');
+    if (!bkDir.existsSync()) {
+      _toast('还没有备份');
+      return;
+    }
+    final files = bkDir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.json'))
+        .toList()
+      ..sort((a, b) => b.path.compareTo(a.path));
+    if (files.isEmpty) {
+      _toast('还没有备份');
+      return;
+    }
+    if (!mounted) return;
+    final chosen = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(20),
+          child: SizedBox(
+            width: (MediaQuery.sizeOf(context).width * 0.9).clamp(0.0, 420),
+            height: 380,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.restore_rounded,
+                        size: 18, color: Tokens.brandBlue),
+                    SizedBox(width: 8),
+                    Text('自动备份（每日一份，保留 7 份）',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Tokens.textPrimary)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: files.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) {
+                      final f = files[i];
+                      final name =
+                          f.uri.pathSegments.last.replaceAll('.json', '');
+                      return GlassButton(
+                        label: '恢复 $name',
+                        icon: Icons.history_rounded,
+                        style: GlassButtonStyle.ghost,
+                        onPressed: () => Navigator.pop(ctx, f.path),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: GlassButton(
+                    label: '关闭',
+                    style: GlassButtonStyle.ghost,
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (chosen == null || !mounted) return;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(22),
+          child: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('恢复该备份？将覆盖当前数据。',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Tokens.textPrimary)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GlassButton(
+                      label: '取消',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: '恢复',
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    try {
+      final file = await Storage.notebooksFile();
+      if (file.existsSync()) {
+        await file.copy(
+            '${file.path}.pre-restore-${DateTime.now().millisecondsSinceEpoch}');
+      }
+      await Storage.writeAtomic(file, await File(chosen).readAsString());
+      await Repo.i.init();
+      _toast('已恢复备份（恢复前已自动留底当前数据）');
+    } catch (e) {
+      _toast('恢复失败：$e');
+    }
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -778,6 +915,12 @@ class _SettingsPageState extends State<SettingsPage> {
                             icon: Icons.bug_report_rounded,
                             style: GlassButtonStyle.ghost,
                             onPressed: _viewErrorLog,
+                          ),
+                          GlassButton(
+                            label: '恢复备份',
+                            icon: Icons.restore_rounded,
+                            style: GlassButtonStyle.ghost,
+                            onPressed: _viewBackups,
                           ),
                         ],
                       ),
