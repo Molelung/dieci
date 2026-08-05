@@ -38,6 +38,7 @@ class _PracticePageState extends State<PracticePage> {
   final _keywordController = TextEditingController();
   final _shortAnswers = <String, String>{};
   final _scroll = ScrollController();
+  final Map<String, String> _chunkMap = {};
 
   final Set<QuestionType> _types = {QuestionType.single, QuestionType.tf};
   String _difficulty = '中等';
@@ -162,6 +163,10 @@ class _PracticePageState extends State<PracticePage> {
     final relevant = Chunker.selectRelevant(
         chunks, _keywordController.text.trim(),
         maxChars: 8000);
+    _chunkMap.clear();
+    for (final c in relevant) {
+      _chunkMap['${c.index}'] = '${c.sourceName ?? '材料'}\n\n${c.text}';
+    }
     return relevant.map((c) => '[${c.index}] ${c.text}').join('\n\n');
   }
 
@@ -820,9 +825,26 @@ class _PracticePageState extends State<PracticePage> {
                           color: Tokens.textSecondary)),
                   if (q.citation != null && q.citation!.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Text('出处：${q.citation}',
-                        style: const TextStyle(
-                            fontSize: 11, color: Tokens.textTertiary)),
+                    GestureDetector(
+                      onTap: () => _showCitation(q.citation!),
+                      child: Row(
+                        children: [
+                          Icon(Icons.format_quote_rounded,
+                              size: 12,
+                              color: Tokens.brandBlue.withValues(alpha: 0.8)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              '出处：${q.citation}',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Tokens.brandBlue),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -1000,6 +1022,62 @@ class _PracticePageState extends State<PracticePage> {
           ),
         ],
       ],
+    );
+  }
+
+  void _showCitation(String raw) {
+    final m = RegExp(r'\[(\d+)\]').firstMatch(raw);
+    final key = m?.group(1);
+    final content = (key != null && _chunkMap.containsKey(key))
+        ? _chunkMap[key]!
+        : raw;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(20),
+          child: SizedBox(
+            width: (MediaQuery.sizeOf(context).width * 0.9).clamp(0.0, 480),
+            height: 300,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.format_quote_rounded,
+                        size: 18, color: Tokens.brandBlue),
+                    const SizedBox(width: 8),
+                    const Text('题目出处',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Tokens.textPrimary)),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(ctx),
+                      child: const Icon(Icons.close_rounded,
+                          size: 18, color: Tokens.textTertiary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Text(content,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.6,
+                            color: Tokens.textSecondary)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
