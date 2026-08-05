@@ -22,6 +22,19 @@ class CrashLog {
     unawaited(_append('${DateTime.now().toIso8601String()}\n$message\n'));
   }
 
+  /// 读取错误日志文本（不存在返回空）
+  static Future<String> readLog() async {
+    try {
+      final file = await _ensure();
+      if (!file.existsSync()) return '（暂无错误日志）';
+      final content = await file.readAsString();
+      if (content.trim().isEmpty) return '（暂无错误日志）';
+      return content;
+    } catch (e) {
+      return '读取日志失败：$e';
+    }
+  }
+
   static Future<void> _append(String entry) async {
     if (_busy) return;
     _busy = true;

@@ -12,6 +12,7 @@ import '../../core/widgets/gradient_background.dart';
 import '../../data/repository.dart';
 import '../../data/settings_store.dart';
 import '../../data/storage.dart';
+import '../../utils/crash_log.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -160,6 +161,72 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       _toast('导入失败：$e');
     }
+  }
+
+  Future<void> _viewErrorLog() async {
+    final log = await CrashLog.readLog();
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(20),
+          child: SizedBox(
+            width: 560,
+            height: 420,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.bug_report_rounded,
+                        size: 18, color: Tokens.brandBlue),
+                    SizedBox(width: 8),
+                    Text('错误日志',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Tokens.textPrimary)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: Tokens.brandBlue.withValues(alpha: 0.10)),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(log,
+                          style: const TextStyle(
+                              fontSize: 11.5,
+                              height: 1.6,
+                              color: Tokens.textSecondary)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: GlassButton(
+                    label: '关闭',
+                    style: GlassButtonStyle.ghost,
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _toast(String msg) {
@@ -582,6 +649,12 @@ class _SettingsPageState extends State<SettingsPage> {
                             icon: Icons.upload_file_rounded,
                             style: GlassButtonStyle.ghost,
                             onPressed: _importData,
+                          ),
+                          GlassButton(
+                            label: '错误日志',
+                            icon: Icons.bug_report_rounded,
+                            style: GlassButtonStyle.ghost,
+                            onPressed: _viewErrorLog,
                           ),
                         ],
                       ),

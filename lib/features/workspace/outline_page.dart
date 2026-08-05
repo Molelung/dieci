@@ -29,6 +29,7 @@ class _OutlinePageState extends State<OutlinePage> {
   final _topicController = TextEditingController();
   final _selected = <String>{};
   final _collapsed = <String>{};
+  final _scroll = ScrollController();
   CancelToken? _cancel;
   StreamSubscription<String>? _sub;
   bool _generating = false;
@@ -39,6 +40,7 @@ class _OutlinePageState extends State<OutlinePage> {
     _sub?.cancel();
     _cancel?.cancel();
     _topicController.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -101,6 +103,14 @@ class _OutlinePageState extends State<OutlinePage> {
               ..clear()
               ..addAll(nodes);
           });
+          // 生成时跟随滚动到最新节点
+          if (_scroll.hasClients) {
+            _scroll.animateTo(
+              _scroll.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+            );
+          }
         },
         onError: (Object e) {
           if (!mounted) return;
@@ -287,6 +297,7 @@ class _OutlinePageState extends State<OutlinePage> {
             Expanded(
               child: hasOutline
                   ? ListView(
+                      controller: _scroll,
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                       children: [
                         for (final node in nb.outline)

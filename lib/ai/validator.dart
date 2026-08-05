@@ -54,6 +54,19 @@ class QuizValidator {
       return errors;
     }
 
+    // 题干去重
+    final seenQ = <String>{};
+    for (final q in questions) {
+      final key = q.question.trim();
+      if (seenQ.contains(key)) {
+        final preview =
+            key.length > 20 ? '${key.substring(0, 20)}…' : key;
+        errors.add('存在重复题干：「$preview」，请去重后重新生成');
+        break;
+      }
+      seenQ.add(key);
+    }
+
     // 题量与题型一致性
     final byType = <QuestionType, int>{};
     for (final q in questions) {
