@@ -859,7 +859,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('关于叠词 · v0.1.7',
+                    const Text('关于叠词 · v0.3.9',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -870,6 +870,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       style: TextStyle(
                           fontSize: 12, height: 1.7, color: Tokens.textTertiary),
                     ),
+                    const SizedBox(height: 8),
+                    const Text('开源仓库：github.com/Molelung/dieci',
+                        style: TextStyle(
+                            fontSize: 11, color: Tokens.textTertiary)),
                     const SizedBox(height: 12),
                     if (_dataPath.isNotEmpty) ...[
                       Text('数据目录：$_dataPath',

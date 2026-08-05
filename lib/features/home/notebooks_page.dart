@@ -23,7 +23,8 @@ class _NotebooksPageState extends State<NotebooksPage> {
 
   Future<void> _createNotebook(BuildContext context) async {
     final nameController = TextEditingController();
-    var gradientIndex = 0;
+    var gradientIndex = DateTime.now().millisecondsSinceEpoch %
+        notebookGradients.length;
 
     final created = await showDialog<Notebook>(
       context: context,
