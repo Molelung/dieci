@@ -818,6 +818,11 @@ class _PracticePageState extends State<PracticePage> {
     final passed = _score;
     final pct = total == 0 ? 0 : (passed / total * 100).round();
     final mistakesCount = Repo.i.notebook(widget.notebookId).mistakes.length;
+    // 按题型汇总正确率
+    final byType = <QuestionType, List<Question>>{};
+    for (final q in _questions) {
+      byType.putIfAbsent(q.type, () => []).add(q);
+    }
     return GlassCard(
       margin: const EdgeInsets.only(bottom: 14),
       glow: true,
@@ -855,6 +860,17 @@ class _PracticePageState extends State<PracticePage> {
                   style: const TextStyle(
                       fontSize: 12, color: Tokens.textSecondary),
                 ),
+                if (byType.length > 1) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      for (final entry in byType.entries)
+                        _typeStat(entry.key, entry.value),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -1230,6 +1246,30 @@ class _PracticePageState extends State<PracticePage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _typeStat(QuestionType t, List<Question> qs) {
+    final correct = qs.where(_isCorrect).length;
+    final label = switch (t) {
+      QuestionType.single => '单选',
+      QuestionType.multi => '多选',
+      QuestionType.tf => '判断',
+      QuestionType.short => '简答',
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+            color: Tokens.brandBlue.withValues(alpha: 0.14)),
+      ),
+      child: Text(
+        '$label $correct/${qs.length}',
+        style: const TextStyle(
+            fontSize: 11, fontWeight: FontWeight.w600, color: Tokens.textSecondary),
       ),
     );
   }
