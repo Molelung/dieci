@@ -37,6 +37,21 @@ class _OutlinePageState extends State<OutlinePage> {
   String _status = '';
 
   @override
+  void initState() {
+    super.initState();
+    // 恢复上次勾选（跨会话/跨页面切换保留）
+    final nb = Repo.i.notebook(widget.notebookId);
+    _selected.addAll(nb.selectedOutlineIds);
+  }
+
+  void _persistSelection(Notebook nb) {
+    nb.selectedOutlineIds
+      ..clear()
+      ..addAll(_selected);
+    Repo.i.save();
+  }
+
+  @override
   void dispose() {
     _sub?.cancel();
     _cancel?.cancel();
@@ -293,19 +308,23 @@ class _OutlinePageState extends State<OutlinePage> {
                       style: GlassButtonStyle.outline,
                       onPressed: () => _startPractice(nb),
                     ),
-                  if (hasOutline && !_generating) ...[
+                    if (hasOutline && !_generating) ...[
                     GlassButton(
                       label: '全选',
                       style: GlassButtonStyle.ghost,
                       onPressed: () => setState(() {
                         _selected.clear();
                         _selected.addAll(_allNodeIds(nb.outline));
+                        _persistSelection(nb);
                       }),
                     ),
                     GlassButton(
                       label: '清空',
                       style: GlassButtonStyle.ghost,
-                      onPressed: () => setState(_selected.clear),
+                      onPressed: () => setState(() {
+                        _selected.clear();
+                        _persistSelection(nb);
+                      }),
                     ),
                     GlassButton(
                       label: '复制大纲',
@@ -336,7 +355,10 @@ class _OutlinePageState extends State<OutlinePage> {
                             selected: _selected,
                             collapsed: _collapsed,
                             level: 0,
-                            onToggle: () => setState(() {}),
+                            onToggle: () {
+                              setState(() {});
+                              _persistSelection(nb);
+                            },
                           ),
                       ],
                     )

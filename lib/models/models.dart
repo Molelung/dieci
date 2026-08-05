@@ -10,6 +10,7 @@ class Notebook {
   List<Question> questions;
   List<ChatMessage> chatMessages;
   List<Mistake> mistakes;
+  List<String> selectedOutlineIds;
 
   Notebook({
     required this.id,
@@ -21,11 +22,13 @@ class Notebook {
     List<Question>? questions,
     List<ChatMessage>? chatMessages,
     List<Mistake>? mistakes,
+    List<String>? selectedOutlineIds,
   })  : sources = sources ?? [],
         outline = outline ?? [],
         questions = questions ?? [],
         chatMessages = chatMessages ?? [],
-        mistakes = mistakes ?? [];
+        mistakes = mistakes ?? [],
+        selectedOutlineIds = selectedOutlineIds ?? [];
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -37,6 +40,7 @@ class Notebook {
         'questions': questions.map((e) => e.toJson()).toList(),
         'chatMessages': chatMessages.map((e) => e.toJson()).toList(),
         'mistakes': mistakes.map((e) => e.toJson()).toList(),
+        'selectedOutlineIds': selectedOutlineIds,
       };
 
   factory Notebook.fromJson(Map<String, dynamic> json) => Notebook(
@@ -59,6 +63,8 @@ class Notebook {
         mistakes: (json['mistakes'] as List? ?? [])
             .map((e) => Mistake.fromJson(e as Map<String, dynamic>))
             .toList(),
+        selectedOutlineIds:
+            (json['selectedOutlineIds'] as List? ?? []).cast<String>(),
       );
 
   int get totalChunks =>

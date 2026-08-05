@@ -22,6 +22,7 @@ class ReviewPage extends StatefulWidget {
 class _ReviewPageState extends State<ReviewPage> {
   bool _flashMode = false;
   bool _scopeMistakes = true;
+  QuestionType? _mistakeFilter;
 
   // 闪卡会话状态
   List<Question> _deck = [];
@@ -191,6 +192,35 @@ class _ReviewPageState extends State<ReviewPage> {
     );
   }
 
+  Widget _filterBar() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          GlassChip(
+            label: '全部',
+            selected: _mistakeFilter == null,
+            onTap: () => setState(() => _mistakeFilter = null),
+          ),
+          for (final (t, label) in const [
+            (QuestionType.single, '单选'),
+            (QuestionType.multi, '多选'),
+            (QuestionType.tf, '判断'),
+            (QuestionType.short, '简答'),
+          ])
+            GlassChip(
+              label: label,
+              selected: _mistakeFilter == t,
+              onTap: () => setState(
+                  () => _mistakeFilter = _mistakeFilter == t ? null : t),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _mistakePanel(Notebook nb) {
     if (nb.mistakes.isEmpty) {
       return Center(
@@ -223,10 +253,16 @@ class _ReviewPageState extends State<ReviewPage> {
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: nb.mistakes.length + 1,
+      itemCount: nb.mistakes.length + 2,
       itemBuilder: (context, i) {
         if (i == 0) return _statsCard(nb);
-        final m = nb.mistakes[i - 1];
+        if (i == 1) return _filterBar();
+        final all = _mistakeFilter == null
+            ? nb.mistakes
+            : nb.mistakes
+                .where((m) => m.question.type == _mistakeFilter)
+                .toList();
+        final m = all[i - 2];
         final q = m.question;
         final expanded = _expandedMistakeId == m.questionId;
         return GlassCard(
