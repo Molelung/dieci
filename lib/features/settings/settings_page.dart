@@ -229,6 +229,107 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _resetAll() async {
+    final first = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(22),
+          child: SizedBox(
+            width: 340,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    size: 34, color: Tokens.danger),
+                const SizedBox(height: 12),
+                const Text('清除全部数据？',
+                    style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: Tokens.textPrimary)),
+                const SizedBox(height: 8),
+                const Text(
+                    '将删除所有笔记本、来源、题目与错题，且无法恢复。建议先「导出备份」。',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 12.5, height: 1.6, color: Tokens.textSecondary)),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GlassButton(
+                      label: '取消',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: '继续',
+                      style: GlassButtonStyle.outline,
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (first != true || !mounted) return;
+
+    final second = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(22),
+          fill: Tokens.danger.withValues(alpha: 0.10),
+          child: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('最后确认：删除全部数据？',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Tokens.danger)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GlassButton(
+                      label: '保留数据',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: '删除',
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (second != true || !mounted) return;
+
+    Repo.i.notebooks.clear();
+    Repo.i.save();
+    _toast('已清除全部数据');
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -657,6 +758,16 @@ class _SettingsPageState extends State<SettingsPage> {
                             onPressed: _viewErrorLog,
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: GlassButton(
+                          label: '清除全部数据（危险）',
+                          icon: Icons.delete_forever_rounded,
+                          style: GlassButtonStyle.ghost,
+                          onPressed: _resetAll,
+                        ),
                       ),
                     ],
                   ],

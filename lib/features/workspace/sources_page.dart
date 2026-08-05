@@ -9,6 +9,7 @@ import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/glass_input.dart';
 import '../../core/widgets/hero_art.dart';
+import '../../data/chunker.dart';
 import '../../data/repository.dart';
 import '../../models/models.dart';
 import '../../utils/obsidian_importer.dart';
@@ -145,13 +146,26 @@ class _SourcesPageState extends State<SourcesPage> {
         return;
       }
       var added = 0;
+      var updated = 0;
+      final nb = Repo.i.notebook(widget.notebookId);
       for (final f in result.files) {
         final body = ObsidianImporter.stripFrontmatter(f.content);
         if (body.trim().isEmpty) continue;
-        _addSource(f.name, body, 'obsidian', filePath: f.path);
-        added++;
+        // 增量更新：同路径来源直接刷新内容，不重复导入
+        final existing = nb.sources
+            .where((s) => s.type == 'obsidian' && s.filePath == f.path)
+            .firstOrNull;
+        if (existing != null) {
+          existing.rawText = body;
+          existing.chunks = Chunker.chunkText(body, sourceName: existing.name);
+          updated++;
+        } else {
+          _addSource(f.name, body, 'obsidian', filePath: f.path);
+          added++;
+        }
       }
-      _toast('已导入 Obsidian 库：$added 篇笔记（跳过 ${result.skipped} 个文件）');
+      Repo.i.save();
+      _toast('已导入 Obsidian 库：新增 $added 篇，更新 $updated 篇（跳过 ${result.skipped} 个文件）');
     } catch (e) {
       _toast('导入失败：$e');
     } finally {
