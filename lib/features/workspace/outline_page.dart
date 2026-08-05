@@ -6,6 +6,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/glass_input.dart';
+import '../../core/widgets/hero_art.dart';
 import '../../data/chunker.dart';
 import '../../data/repository.dart';
 import '../../data/settings_store.dart';
@@ -271,12 +272,12 @@ class _OutlinePageState extends State<OutlinePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                hasSources ? Icons.account_tree_rounded : Icons.library_add_rounded,
-                size: 46,
-                color: hasSources ? Tokens.brandBlue : Tokens.brandPink,
+              HeroArt(
+                icon: hasSources
+                    ? Icons.account_tree_rounded
+                    : Icons.library_add_rounded,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
               Text(
                 hasSources ? '输入主题，生成你的学习大纲' : '先导入学习材料',
                 style: const TextStyle(
@@ -336,12 +337,12 @@ class _OutlineNodeTile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
               color: isSel
-                  ? Tokens.brandPink.withValues(alpha: 0.16)
-                  : Colors.white.withValues(alpha: 0.04),
+                  ? Tokens.brandBlue.withValues(alpha: 0.10)
+                  : Colors.white.withValues(alpha: 0.7),
               border: Border.all(
                 color: isSel
-                    ? Tokens.brandPink.withValues(alpha: 0.55)
-                    : Colors.white.withValues(alpha: 0.10),
+                    ? Tokens.brandBlue.withValues(alpha: 0.5)
+                    : Tokens.brandBlue.withValues(alpha: 0.10),
               ),
             ),
             child: Row(
@@ -351,7 +352,7 @@ class _OutlineNodeTile extends StatelessWidget {
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked_rounded,
                   size: 16,
-                  color: isSel ? Tokens.brandPink : Tokens.textTertiary,
+                  color: isSel ? Tokens.brandBlue : Tokens.textTertiary,
                 ),
                 const SizedBox(width: 9),
                 Expanded(

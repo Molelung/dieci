@@ -17,7 +17,7 @@ class GlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = selectedColor ?? Tokens.brandPink;
+    final accent = selectedColor ?? Tokens.brandBlue;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -27,20 +27,20 @@ class GlassChip extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           color: selected
-              ? accent.withValues(alpha: 0.30)
-              : Colors.white.withValues(alpha: 0.06),
+              ? accent.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.75),
           border: Border.all(
             color: selected
-                ? accent.withValues(alpha: 0.7)
-                : Colors.white.withValues(alpha: 0.14),
+                ? accent.withValues(alpha: 0.6)
+                : Tokens.brandBlue.withValues(alpha: 0.14),
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? Colors.white : Tokens.textSecondary,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? accent : Tokens.textSecondary,
           ),
         ),
       ),

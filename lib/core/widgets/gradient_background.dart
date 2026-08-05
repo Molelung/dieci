@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 
-/// 玻璃背后的「世界」：缓慢漂移的霓虹渐变光斑
+/// 玻璃背后的「世界」：蓝白天光 + 柔和漂浮的浅蓝光斑
 class GradientBackground extends StatefulWidget {
   final Widget child;
 
@@ -38,8 +38,8 @@ class _GradientBackgroundState extends State<GradientBackground>
         const DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
               colors: [Tokens.bgDeep, Tokens.bg, Tokens.bgDeep],
             ),
           ),
@@ -58,35 +58,46 @@ class _GradientBackgroundState extends State<GradientBackground>
                     _blob(
                       w: w,
                       h: h,
-                      color: Tokens.brandPink,
+                      color: Tokens.brandSky,
                       center: Offset(
                         0.25 + 0.18 * math.sin(t * 0.7),
                         0.22 + 0.15 * math.cos(t * 0.9),
                       ),
-                      radius: 0.55,
-                      opacity: 0.20,
-                    ),
-                    _blob(
-                      w: w,
-                      h: h,
-                      color: Tokens.brandBlue,
-                      center: Offset(
-                        0.78 + 0.16 * math.cos(t * 0.6),
-                        0.30 + 0.18 * math.sin(t * 0.8),
-                      ),
                       radius: 0.5,
-                      opacity: 0.16,
+                      opacity: 0.30,
                     ),
                     _blob(
                       w: w,
                       h: h,
-                      color: Tokens.brandViolet,
+                      color: Tokens.brandCyan,
+                      center: Offset(
+                        0.80 + 0.16 * math.cos(t * 0.6),
+                        0.32 + 0.18 * math.sin(t * 0.8),
+                      ),
+                      radius: 0.42,
+                      opacity: 0.18,
+                    ),
+                    _blob(
+                      w: w,
+                      h: h,
+                      color: Tokens.brandIndigo,
                       center: Offset(
                         0.55 + 0.2 * math.sin(t * 0.5 + 1.2),
-                        0.85 + 0.12 * math.cos(t * 0.7 + 0.6),
+                        0.88 + 0.12 * math.cos(t * 0.7 + 0.6),
                       ),
-                      radius: 0.45,
-                      opacity: 0.13,
+                      radius: 0.4,
+                      opacity: 0.14,
+                    ),
+                    _blob(
+                      w: w,
+                      h: h,
+                      color: Colors.white,
+                      center: Offset(
+                        0.10 + 0.1 * math.cos(t * 0.4),
+                        0.70 + 0.1 * math.sin(t * 0.6 + 2.0),
+                      ),
+                      radius: 0.3,
+                      opacity: 0.5,
                     ),
                   ],
                 );

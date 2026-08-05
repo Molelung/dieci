@@ -6,6 +6,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/glass_input.dart';
+import '../../core/widgets/hero_art.dart';
 import '../../data/repository.dart';
 import '../../models/models.dart';
 import '../../utils/obsidian_importer.dart';
@@ -226,9 +227,8 @@ class _SourcesPageState extends State<SourcesPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.folder_copy_rounded,
-                  size: 46, color: Tokens.brandViolet),
-              const SizedBox(height: 14),
+              const HeroArt(icon: Icons.folder_copy_rounded),
+              const SizedBox(height: 18),
               const Text('还没有学习材料',
                   style: TextStyle(
                       fontSize: 18,
@@ -359,8 +359,10 @@ class _SourcesPageState extends State<SourcesPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: Colors.white.withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: Tokens.brandBlue.withValues(alpha: 0.10)),
                     ),
                     child: SingleChildScrollView(
                       child: Text(

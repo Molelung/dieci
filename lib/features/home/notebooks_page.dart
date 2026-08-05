@@ -4,6 +4,7 @@ import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/glass_input.dart';
 import '../../core/widgets/gradient_background.dart';
+import '../../core/widgets/hero_art.dart';
 import '../../data/repository.dart';
 import '../../models/models.dart';
 import '../settings/settings_page.dart';
@@ -136,8 +137,9 @@ class NotebooksPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: Tokens.brandPink.withValues(alpha: 0.4),
+                                color: Tokens.brandBlue.withValues(alpha: 0.4),
                                 blurRadius: 20,
+                                offset: const Offset(0, 6),
                               ),
                             ],
                           ),
@@ -187,9 +189,9 @@ class NotebooksPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _createNotebook(context),
-        backgroundColor: Tokens.brandPink,
+        backgroundColor: Tokens.brandBlue,
         foregroundColor: Colors.white,
-        elevation: 8,
+        elevation: 6,
         icon: const Icon(Icons.add_rounded),
         label: const Text('新建笔记本',
             style: TextStyle(fontWeight: FontWeight.w600)),
@@ -208,9 +210,8 @@ class NotebooksPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.auto_awesome_rounded,
-                  size: 48, color: Tokens.brandBlue),
-              const SizedBox(height: 16),
+              const HeroArt(icon: Icons.auto_stories_rounded),
+              const SizedBox(height: 18),
               const Text('开始你的高效复习',
                   style: TextStyle(
                       fontSize: 20,

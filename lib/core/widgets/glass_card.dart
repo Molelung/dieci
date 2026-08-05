@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 
-/// 液态玻璃卡片：背景模糊 + 渐变填充 + 半透明描边 + 可选品牌色光晕
+/// 液态玻璃卡片（浅色）：白玻璃 + 背景模糊 + 柔和蓝影 + 渐变描边
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -21,9 +21,9 @@ class GlassCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.margin = EdgeInsets.zero,
     this.radius = Tokens.radiusLg,
-    this.blur = 18,
+    this.blur = 20,
     this.fill = Tokens.glassFill,
-    this.borderOpacity = 0.20,
+    this.borderOpacity = 0.65,
     this.glow = false,
     this.onTap,
     this.borderGradient,
@@ -31,19 +31,19 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final border = borderGradient ?? const LinearGradient(colors: [
-      Color(0x66FFFFFF),
-      Color(0x22FFFFFF),
-    ]);
-    final glowShadow = glow
-        ? [
-            BoxShadow(
-              color: Tokens.brandPink.withValues(alpha: 0.28),
-              blurRadius: 28,
-              spreadRadius: -6,
-            ),
-          ]
-        : null;
+    final border = borderGradient ??
+        const LinearGradient(colors: [
+          Color(0xE6FFFFFF),
+          Color(0x8CFFFFFF),
+        ]);
+    final glowShadow = [
+      BoxShadow(
+        color: Tokens.shadow,
+        blurRadius: glow ? 30 : 18,
+        spreadRadius: glow ? -4 : -8,
+        offset: const Offset(0, 8),
+      ),
+    ];
 
     final inner = ClipRRect(
       borderRadius: BorderRadius.circular(radius),
@@ -56,7 +56,7 @@ class GlassCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.white.withValues(alpha: 0.12),
+                Colors.white.withValues(alpha: 0.85),
                 fill,
               ],
             ),

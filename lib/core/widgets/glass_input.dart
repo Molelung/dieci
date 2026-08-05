@@ -31,8 +31,9 @@ class GlassInput extends StatelessWidget {
       borderRadius: BorderRadius.circular(Tokens.radiusMd),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.07),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+          color: Colors.white.withValues(alpha: 0.8),
+          border: Border.all(
+              color: Tokens.brandBlue.withValues(alpha: 0.16), width: 1.2),
         ),
         child: TextField(
           controller: controller,
@@ -40,6 +41,7 @@ class GlassInput extends StatelessWidget {
           maxLines: maxLines,
           maxLength: maxLength,
           onChanged: onChanged,
+          cursorColor: Tokens.brandBlue,
           style: const TextStyle(color: Tokens.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             labelText: label,

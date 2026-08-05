@@ -4,6 +4,7 @@ import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/widgets/glass_card.dart';
+import '../../core/widgets/hero_art.dart';
 import '../../data/chunker.dart';
 import '../../data/repository.dart';
 import '../../data/settings_store.dart';
@@ -227,9 +228,8 @@ class _ChatPageState extends State<ChatPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.auto_awesome_rounded,
-                  size: 40, color: Tokens.brandBlue),
-              const SizedBox(height: 12),
+              const HeroArt(icon: Icons.forum_rounded, size: 84),
+              const SizedBox(height: 16),
               const Text('向你的笔记库提问',
                   style: TextStyle(
                       fontSize: 17,
@@ -262,12 +262,12 @@ class _ChatPageState extends State<ChatPage> {
           radius: 16,
           padding: const EdgeInsets.all(13),
           fill: isUser
-              ? Tokens.brandPink.withValues(alpha: 0.14)
+              ? Tokens.brandBlue.withValues(alpha: 0.10)
               : Tokens.glassFill,
           borderGradient: isUser
               ? LinearGradient(colors: [
-                  Tokens.brandPink.withValues(alpha: 0.5),
-                  Tokens.brandViolet.withValues(alpha: 0.35),
+                  Tokens.brandSky.withValues(alpha: 0.6),
+                  Tokens.brandBlue.withValues(alpha: 0.4),
                 ])
               : null,
           child: Column(
@@ -314,10 +314,10 @@ class _ChatPageState extends State<ChatPage> {
               ],
               Text(
                 m.text,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13.5,
                   height: 1.6,
-                  color: isUser ? Colors.white : Tokens.textPrimary,
+                  color: Tokens.textPrimary,
                 ),
               ),
             ],
@@ -339,7 +339,7 @@ class _ChatPageState extends State<ChatPage> {
         child: Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: Tokens.brandBlue.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(icon, size: 14, color: Tokens.textSecondary),
@@ -352,9 +352,17 @@ class _ChatPageState extends State<ChatPage> {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       decoration: BoxDecoration(
-        color: const Color(0xE6101018),
+        color: const Color(0xF2FFFFFF),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(
+            color: Tokens.brandBlue.withValues(alpha: 0.16), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Tokens.brandBlue.withValues(alpha: 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -363,6 +371,7 @@ class _ChatPageState extends State<ChatPage> {
               controller: _controller,
               enabled: !_streaming,
               maxLines: 1,
+              cursorColor: Tokens.brandBlue,
               style: const TextStyle(color: Tokens.textPrimary, fontSize: 14),
               decoration: InputDecoration(
                 hintText: '基于 ${_usedChunks == 0 ? '材料' : '$_usedChunks 个分块'} 提问…',

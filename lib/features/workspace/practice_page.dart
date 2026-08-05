@@ -335,13 +335,13 @@ class _PracticePageState extends State<PracticePage> {
                   style: TextStyle(fontSize: 12, color: Tokens.textSecondary)),
               const SizedBox(width: 12),
               Expanded(
-                child: SliderTheme(
+                  child: SliderTheme(
                   data: SliderThemeData(
-                    activeTrackColor: Tokens.brandPink,
-                    thumbColor: Tokens.brandPink,
-                    inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
-                    overlayColor:
-                        Tokens.brandPink.withValues(alpha: 0.15),
+                    activeTrackColor: Tokens.brandBlue,
+                    thumbColor: Tokens.brandBlue,
+                    inactiveTrackColor:
+                        Tokens.brandBlue.withValues(alpha: 0.10),
+                    overlayColor: Tokens.brandBlue.withValues(alpha: 0.12),
                     trackHeight: 3,
                   ),
                   child: Slider(
@@ -545,7 +545,7 @@ class _PracticePageState extends State<PracticePage> {
               if (q.difficulty > 0.66)
                 const Text('困难', style: TextStyle(fontSize: 10, color: Tokens.danger)),
               if (q.difficulty > 0.33 && q.difficulty <= 0.66)
-                const Text('中等', style: TextStyle(fontSize: 10, color: Colors.amber)),
+                const Text('中等', style: TextStyle(fontSize: 10, color: Tokens.warn)),
               const Spacer(),
               if (submitted)
                 Icon(
@@ -580,10 +580,10 @@ class _PracticePageState extends State<PracticePage> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08)),
+                    color: Tokens.brandBlue.withValues(alpha: 0.10)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,10 +616,10 @@ class _PracticePageState extends State<PracticePage> {
 
   Widget _typeBadge(QuestionType t) {
     final (label, color) = switch (t) {
-      QuestionType.single => ('单选', Tokens.brandPink),
-      QuestionType.multi => ('多选', Tokens.brandViolet),
-      QuestionType.tf => ('判断', Tokens.brandBlue),
-      QuestionType.short => ('简答', Tokens.brandCyan),
+      QuestionType.single => ('单选', Tokens.brandBlue),
+      QuestionType.multi => ('多选', Tokens.brandIndigo),
+      QuestionType.tf => ('判断', Tokens.brandCyan),
+      QuestionType.short => ('简答', Tokens.success),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -704,12 +704,12 @@ class _PracticePageState extends State<PracticePage> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           color: selected
-              ? Tokens.brandBlue.withValues(alpha: 0.16)
-              : Colors.white.withValues(alpha: 0.04),
+              ? Tokens.brandBlue.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.7),
           border: Border.all(
             color: selected
                 ? Tokens.brandBlue.withValues(alpha: 0.55)
-                : Colors.white.withValues(alpha: 0.08),
+                : Tokens.brandBlue.withValues(alpha: 0.12),
           ),
         ),
         child: Row(

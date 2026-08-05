@@ -121,9 +121,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: Colors.white.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border:
+            Border.all(color: Tokens.brandBlue.withValues(alpha: 0.14)),
       ),
       child: Text(text,
           style:
@@ -161,9 +162,10 @@ class _WorkspacePageState extends State<WorkspacePage> {
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: Tokens.brandPink.withValues(alpha: 0.35),
+                    color: Tokens.brandBlue.withValues(alpha: 0.30),
                     blurRadius: 16,
                     spreadRadius: -4,
+                    offset: const Offset(0, 4),
                   ),
                 ]
               : null,
@@ -189,12 +191,13 @@ class _WorkspacePageState extends State<WorkspacePage> {
     return Container(
       margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xE6101018),
+        color: const Color(0xF2FFFFFF),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(
+            color: Tokens.brandBlue.withValues(alpha: 0.16), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: Tokens.brandBlue.withValues(alpha: 0.14),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -214,7 +217,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
                       Icon(icon,
                           size: 20,
                           color: _tab == tab
-                              ? Tokens.brandPink
+                              ? Tokens.brandBlue
                               : Tokens.textTertiary),
                       const SizedBox(height: 3),
                       Text(label,

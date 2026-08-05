@@ -262,7 +262,7 @@ class _SettingsPageState extends State<SettingsPage> {
           borderRadius: BorderRadius.circular(999),
           color: selected
               ? Tokens.brandBlue.withValues(alpha: 0.25)
-              : Colors.white.withValues(alpha: 0.05),
+              : Colors.white.withValues(alpha: 0.8),
           border: Border.all(
             color: selected
                 ? Tokens.brandBlue.withValues(alpha: 0.6)
@@ -286,7 +286,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const Padding(
             padding: EdgeInsets.only(top: 5),
             child: Icon(Icons.fiber_manual_record_rounded,
-                size: 6, color: Tokens.brandPink),
+                size: 6, color: Tokens.brandBlue),
           ),
           const SizedBox(width: 8),
           Expanded(

@@ -14,9 +14,10 @@ void main() {
     expect(find.textContaining('开始你的高效复习'), findsOneWidget);
   });
 
-  test('设计令牌：品牌渐变存在且终端值正确', () {
-    expect(Tokens.brandPink, const Color(0xFFFB7299));
-    expect(Tokens.brandBlue, const Color(0xFF00AEEC));
+  test('设计令牌：蓝白主题存在且终端值正确', () {
+    expect(Tokens.brandBlue, const Color(0xFF2E7CF6));
+    expect(Tokens.brandSky, const Color(0xFF5AC8FA));
+    expect(Tokens.bg, const Color(0xFFF3F8FF));
     expect(notebookGradients.length, greaterThanOrEqualTo(4));
   });
 }

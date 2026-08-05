@@ -38,9 +38,10 @@ class _GlassButtonState extends State<GlassButton> {
             gradient: Tokens.brandGradient,
             boxShadow: [
               BoxShadow(
-                color: Tokens.brandPink.withValues(alpha: 0.35),
-                blurRadius: 18,
+                color: Tokens.brandBlue.withValues(alpha: 0.30),
+                blurRadius: 16,
                 spreadRadius: -4,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
@@ -48,14 +49,15 @@ class _GlassButtonState extends State<GlassButton> {
         ),
       GlassButtonStyle.outline => DecoratedBox(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
-            color: Colors.white.withValues(alpha: 0.06),
+            border: Border.all(
+                color: Tokens.brandBlue.withValues(alpha: 0.35), width: 1.2),
+            color: Colors.white.withValues(alpha: 0.75),
           ),
           child: _inner(),
         ),
       GlassButtonStyle.ghost => DecoratedBox(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
+            color: Tokens.brandBlue.withValues(alpha: 0.06),
           ),
           child: _inner(),
         ),
@@ -82,21 +84,24 @@ class _GlassButtonState extends State<GlassButton> {
   }
 
   Widget _inner() {
-    final Color fg = widget.style == GlassButtonStyle.filled
-        ? Colors.white
-        : Tokens.textPrimary;
+    final Color fg = switch (widget.style) {
+      GlassButtonStyle.filled => Colors.white,
+      _ => Tokens.brandBlue,
+    };
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (widget.loading) ...[
-            const SizedBox(
+            SizedBox(
               width: 14,
               height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Colors.white70,
+                color: widget.style == GlassButtonStyle.filled
+                    ? Colors.white
+                    : Tokens.brandBlue,
               ),
             ),
             const SizedBox(width: 10),
