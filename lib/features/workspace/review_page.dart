@@ -22,6 +22,7 @@ class _ReviewPageState extends State<ReviewPage> {
   bool _flashMode = false;
   bool _scopeMistakes = true;
   bool _shuffle = false;
+  bool _todayOnly = false;
   QuestionType? _mistakeFilter;
 
   // 闪卡会话状态
@@ -204,8 +205,19 @@ class _ReviewPageState extends State<ReviewPage> {
         children: [
           GlassChip(
             label: '全部',
-            selected: _mistakeFilter == null,
-            onTap: () => setState(() => _mistakeFilter = null),
+            selected: _mistakeFilter == null && !_todayOnly,
+            onTap: () => setState(() {
+              _mistakeFilter = null;
+              _todayOnly = false;
+            }),
+          ),
+          GlassChip(
+            label: '仅今天',
+            selected: _todayOnly,
+            onTap: () => setState(() {
+              _todayOnly = !_todayOnly;
+              if (_todayOnly) _mistakeFilter = null;
+            }),
           ),
           for (final (t, label) in const [
             (QuestionType.single, '单选'),
@@ -215,9 +227,15 @@ class _ReviewPageState extends State<ReviewPage> {
           ])
             GlassChip(
               label: label,
-              selected: _mistakeFilter == t,
-              onTap: () => setState(
-                  () => _mistakeFilter = _mistakeFilter == t ? null : t),
+              selected: _mistakeFilter == t && !_todayOnly,
+              onTap: () => setState(() {
+                if (_todayOnly) {
+                  _todayOnly = false;
+                  _mistakeFilter = t;
+                } else {
+                  _mistakeFilter = _mistakeFilter == t ? null : t;
+                }
+              }),
             ),
         ],
       ),
@@ -254,11 +272,22 @@ class _ReviewPageState extends State<ReviewPage> {
       );
     }
 
-    final filtered = _mistakeFilter == null
-        ? nb.mistakes
-        : nb.mistakes
-            .where((m) => m.question.type == _mistakeFilter)
-            .toList();
+    final filtered = nb.mistakes.where((m) {
+      if (_todayOnly) {
+        final d = DateTime.tryParse(m.answeredAt);
+        if (d == null) return false;
+        final now = DateTime.now();
+        if (d.year != now.year ||
+            d.month != now.month ||
+            d.day != now.day) {
+          return false;
+        }
+      }
+      if (_mistakeFilter != null && m.question.type != _mistakeFilter) {
+        return false;
+      }
+      return true;
+    }).toList();
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       itemCount: 2 + (filtered.isEmpty ? 1 : filtered.length),
@@ -298,14 +327,23 @@ class _ReviewPageState extends State<ReviewPage> {
                     _typeBadge(q.type),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        q.question,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: Tokens.textPrimary),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            q.question,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: Tokens.textPrimary),
+                          ),
+                          Text(_relativeTime(m.answeredAt),
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Tokens.textTertiary)),
+                        ],
                       ),
                     ),
                     Icon(
@@ -629,6 +667,16 @@ class _ReviewPageState extends State<ReviewPage> {
         ),
       ),
     );
+  }
+
+  static String _relativeTime(String iso) {
+    final d = DateTime.tryParse(iso);
+    if (d == null) return '';
+    final diff = DateTime.now().difference(d.toLocal());
+    if (diff.inMinutes < 1) return '刚刚';
+    if (diff.inHours < 1) return '${diff.inMinutes} 分钟前';
+    if (diff.inDays < 1) return '${diff.inHours} 小时前';
+    return '${diff.inDays} 天前';
   }
 
   Widget _typeBadge(QuestionType t) {
