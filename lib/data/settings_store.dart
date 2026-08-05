@@ -12,6 +12,7 @@ class SettingsStore {
   String baseUrl = _defaultBaseUrl;
   String model = _defaultModel;
   double temperature = 0.3;
+  String lastVaultPath = '';
 
   static const modelSuggestions = [
     'gemini-2.5-flash',
@@ -32,6 +33,7 @@ class SettingsStore {
     baseUrl = prefs.getString('base_url') ?? _defaultBaseUrl;
     model = prefs.getString('model') ?? _defaultModel;
     temperature = prefs.getDouble('temperature') ?? 0.3;
+    lastVaultPath = prefs.getString('last_vault_path') ?? '';
   }
 
   Future<void> save() async {
@@ -42,5 +44,6 @@ class SettingsStore {
     await prefs.setString('base_url', baseUrl);
     await prefs.setString('model', model);
     await prefs.setDouble('temperature', temperature);
+    await prefs.setString('last_vault_path', lastVaultPath);
   }
 }

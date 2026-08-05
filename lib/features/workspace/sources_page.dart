@@ -11,6 +11,7 @@ import '../../core/widgets/glass_input.dart';
 import '../../core/widgets/hero_art.dart';
 import '../../data/chunker.dart';
 import '../../data/repository.dart';
+import '../../data/settings_store.dart';
 import '../../models/models.dart';
 import '../../utils/obsidian_importer.dart';
 
@@ -134,13 +135,21 @@ class _SourcesPageState extends State<SourcesPage> {
       return;
     }
     if (dir == null || !mounted) return;
-    final vaultPath = dir;
+    await _importVault(dir);
+  }
 
+  Future<void> _reimportLastVault() async {
+    final path = SettingsStore.i.lastVaultPath;
+    if (path.isEmpty) return;
+    await _importVault(path);
+  }
+
+  Future<void> _importVault(String dir) async {
     setState(() => _importing = true);
     try {
       // 大目录遍历放到后台 isolate，避免 UI 卡顿/ANR
       final result =
-          await Isolate.run(() => ObsidianImporter.scanVault(vaultPath));
+          await Isolate.run(() => ObsidianImporter.scanVault(dir));
       if (result.files.isEmpty) {
         _toast('该目录下没有找到 .md 笔记');
         return;
@@ -165,6 +174,8 @@ class _SourcesPageState extends State<SourcesPage> {
         }
       }
       Repo.i.save();
+      SettingsStore.i.lastVaultPath = dir;
+      await SettingsStore.i.save();
       _toast('已导入 Obsidian 库：新增 $added 篇，更新 $updated 篇（跳过 ${result.skipped} 个文件）');
     } catch (e) {
       _toast('导入失败：$e');
@@ -249,6 +260,15 @@ class _SourcesPageState extends State<SourcesPage> {
                         loading: _importing,
                         onPressed: _importing ? null : _pickVault,
                       ),
+                      if (SettingsStore.i.lastVaultPath.isNotEmpty)
+                        GlassButton(
+                          label: '重新导入上次库',
+                          icon: Icons.refresh_rounded,
+                          style: GlassButtonStyle.ghost,
+                          loading: _importing,
+                          onPressed:
+                              _importing ? null : _reimportLastVault,
+                        ),
                       GlassButton(
                         label: '导入 .md 文件',
                         icon: Icons.upload_file_rounded,
