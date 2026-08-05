@@ -7,9 +7,10 @@ import '../../models/models.dart';
 import 'chat_page.dart';
 import 'outline_page.dart';
 import 'practice_page.dart';
+import 'review_page.dart';
 import 'sources_page.dart';
 
-enum WorkspaceTab { outline, practice, chat, sources }
+enum WorkspaceTab { outline, practice, review, chat, sources }
 
 class WorkspacePage extends StatefulWidget {
   final String notebookId;
@@ -26,6 +27,7 @@ class _WorkspacePageState extends State<WorkspacePage> {
   static const _tabs = [
     (WorkspaceTab.outline, '大纲', Icons.account_tree_rounded),
     (WorkspaceTab.practice, '刷题', Icons.quiz_rounded),
+    (WorkspaceTab.review, '复习', Icons.autorenew_rounded),
     (WorkspaceTab.chat, '对话', Icons.chat_bubble_rounded),
     (WorkspaceTab.sources, '来源', Icons.folder_copy_rounded),
   ];
@@ -44,6 +46,8 @@ class _WorkspacePageState extends State<WorkspacePage> {
                 OutlinePage(notebookId: widget.notebookId),
               WorkspaceTab.practice =>
                 PracticePage(notebookId: widget.notebookId),
+              WorkspaceTab.review =>
+                ReviewPage(notebookId: widget.notebookId),
               WorkspaceTab.chat => ChatPage(notebookId: widget.notebookId),
               WorkspaceTab.sources =>
                 SourcesPage(notebookId: widget.notebookId),

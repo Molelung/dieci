@@ -332,6 +332,37 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ),
                     ],
+                    if (_proModels.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          const Icon(Icons.workspace_premium_rounded,
+                              size: 15, color: Tokens.brandBlue),
+                          const SizedBox(width: 6),
+                          const Text('Pro 推荐：',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Tokens.textPrimary)),
+                          Expanded(
+                            child: Text(
+                              _proModels.first,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Tokens.brandBlue),
+                            ),
+                          ),
+                          GlassButton(
+                            label: '切换',
+                            style: GlassButtonStyle.ghost,
+                            onPressed: () => setState(() {
+                              _modelController.text = _proModels.first;
+                              SettingsStore.i.model = _proModels.first;
+                            }),
+                          ),
+                        ],
+                      ),
+                    ],
                     if (_testResult != null) ...[
                       const SizedBox(height: 12),
                       Text(_testResult!,
