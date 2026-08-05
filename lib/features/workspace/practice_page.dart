@@ -15,6 +15,7 @@ import '../../data/repository.dart';
 import '../../data/settings_store.dart';
 import '../../models/models.dart';
 import '../../features/settings/settings_page.dart';
+import 'review_page.dart';
 
 class PracticePage extends StatefulWidget {
   final String notebookId;
@@ -684,6 +685,7 @@ class _PracticePageState extends State<PracticePage> {
     final total = _questions.length;
     final passed = _score;
     final pct = total == 0 ? 0 : (passed / total * 100).round();
+    final mistakesCount = Repo.i.notebook(widget.notebookId).mistakes.length;
     return GlassCard(
       margin: const EdgeInsets.only(bottom: 14),
       glow: true,
@@ -730,6 +732,19 @@ class _PracticePageState extends State<PracticePage> {
             style: GlassButtonStyle.outline,
             onPressed: _generate,
           ),
+          const SizedBox(width: 8),
+          if (mistakesCount > 0)
+            GlassButton(
+              label: '复习错题',
+              icon: Icons.autorenew_rounded,
+              style: GlassButtonStyle.outline,
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReviewPage(notebookId: widget.notebookId),
+                ),
+              ),
+            ),
         ],
       ),
     );
