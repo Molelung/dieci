@@ -81,6 +81,17 @@ class _PracticePageState extends State<PracticePage> {
   @override
   void initState() {
     super.initState();
+    // 恢复上次出题参数
+    final s = SettingsStore.i;
+    _types.clear();
+    for (final t in s.quizTypes) {
+      final qt = QuestionType.values.where((e) => e.name == t).firstOrNull;
+      if (qt != null) _types.add(qt);
+    }
+    if (_types.isEmpty) _types.add(QuestionType.single);
+    _count = s.quizCount.clamp(5, 30);
+    _difficulty = s.quizDifficulty;
+    _mistakeFirst = s.quizMistakeFirst;
     final nb = Repo.i.notebook(widget.notebookId);
     if (widget.presetMistakeIds != null && widget.presetMistakeIds!.isNotEmpty) {      // 错题重做模式：直接从错题本加载，无需 AI 生成
       final ids = widget.presetMistakeIds!.toSet();
@@ -150,6 +161,15 @@ class _PracticePageState extends State<PracticePage> {
       final text = '$m:$s';
       if (text != _elapsed) setState(() => _elapsed = text);
     });
+  }
+
+  void _persistParams() {
+    final s = SettingsStore.i;
+    s.quizTypes = _types.map((t) => t.name).toList();
+    s.quizCount = _count;
+    s.quizDifficulty = _difficulty;
+    s.quizMistakeFirst = _mistakeFirst;
+    unawaited(s.save());
   }
 
   String _buildMaterial(Notebook nb) {
@@ -525,6 +545,7 @@ class _PracticePageState extends State<PracticePage> {
                     } else {
                       _types.add(t);
                     }
+                    _persistParams();
                   }),
                 ),
             ],
@@ -553,7 +574,10 @@ class _PracticePageState extends State<PracticePage> {
                     label: '$_count',
                     onChanged: _generating
                         ? null
-                        : (v) => setState(() => _count = v.round()),
+                        : (v) => setState(() {
+                              _count = v.round();
+                              _persistParams();
+                            }),
                   ),
                 ),
               ),
@@ -579,7 +603,10 @@ class _PracticePageState extends State<PracticePage> {
                   label: d,
                   selected: _difficulty == d,
                   selectedColor: Tokens.brandBlue,
-                  onTap: () => setState(() => _difficulty = d),
+                  onTap: () => setState(() {
+                    _difficulty = d;
+                    _persistParams();
+                  }),
                 ),
             ],
           ),
@@ -597,7 +624,10 @@ class _PracticePageState extends State<PracticePage> {
                   label: '错题优先（新题强化薄弱点）',
                   selected: _mistakeFirst,
                   selectedColor: Tokens.brandCyan,
-                  onTap: () => setState(() => _mistakeFirst = !_mistakeFirst),
+                  onTap: () => setState(() {
+                    _mistakeFirst = !_mistakeFirst;
+                    _persistParams();
+                  }),
                 ),
               ),
               const SizedBox(width: 10),

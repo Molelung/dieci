@@ -236,6 +236,25 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
+  void _exportChat() {
+    final nb = Repo.i.notebook(widget.notebookId);
+    if (nb.chatMessages.isEmpty) {
+      _toast('对话为空');
+      return;
+    }
+    final sb = StringBuffer()
+      ..writeln('# 叠词 · 对话记录（${nb.name}）')
+      ..writeln();
+    for (final m in nb.chatMessages) {
+      final role = m.role == 'user' ? '**我**' : '**AI**';
+      sb.writeln('## $role');
+      sb.writeln(m.text);
+      sb.writeln();
+    }
+    Clipboard.setData(ClipboardData(text: sb.toString()));
+    _toast('已复制对话记录（Markdown）');
+  }
+
   Future<void> _confirmClear() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -670,6 +689,18 @@ class _ChatPageState extends State<ChatPage> {
       ),
       child: Row(
         children: [
+          if (nb.chatMessages.isNotEmpty)
+            GestureDetector(
+              onTap: _exportChat,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Tooltip(
+                  message: '导出对话',
+                  child: Icon(Icons.download_rounded,
+                      size: 20, color: Tokens.textTertiary),
+                ),
+              ),
+            ),
           if (nb.chatMessages.isNotEmpty)
             GestureDetector(
               onTap: _confirmClear,

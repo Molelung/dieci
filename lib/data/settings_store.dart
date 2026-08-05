@@ -13,6 +13,10 @@ class SettingsStore {
   String model = _defaultModel;
   double temperature = 0.3;
   String lastVaultPath = '';
+  List<String> quizTypes = ['single', 'tf'];
+  int quizCount = 10;
+  String quizDifficulty = '中等';
+  bool quizMistakeFirst = false;
 
   static const modelSuggestions = [
     'gemini-2.5-flash',
@@ -34,6 +38,10 @@ class SettingsStore {
     model = prefs.getString('model') ?? _defaultModel;
     temperature = prefs.getDouble('temperature') ?? 0.3;
     lastVaultPath = prefs.getString('last_vault_path') ?? '';
+    quizTypes = prefs.getStringList('quiz_types') ?? ['single', 'tf'];
+    quizCount = prefs.getInt('quiz_count') ?? 10;
+    quizDifficulty = prefs.getString('quiz_difficulty') ?? '中等';
+    quizMistakeFirst = prefs.getBool('quiz_mistake_first') ?? false;
   }
 
   Future<void> save() async {
@@ -45,5 +53,9 @@ class SettingsStore {
     await prefs.setString('model', model);
     await prefs.setDouble('temperature', temperature);
     await prefs.setString('last_vault_path', lastVaultPath);
+    await prefs.setStringList('quiz_types', quizTypes);
+    await prefs.setInt('quiz_count', quizCount);
+    await prefs.setString('quiz_difficulty', quizDifficulty);
+    await prefs.setBool('quiz_mistake_first', quizMistakeFirst);
   }
 }
