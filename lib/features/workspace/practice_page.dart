@@ -267,6 +267,17 @@ class _PracticePageState extends State<PracticePage> {
     }
 
     if (!mounted || result == null) return;
+    // 持久化到题库（去重，上限 500）：供「闪卡-全部题目」与统计使用
+    for (final q in result) {
+      if (nb.questions.any((e) => e.question.trim() == q.question.trim())) {
+        continue;
+      }
+      nb.questions.add(q);
+    }
+    if (nb.questions.length > 500) {
+      nb.questions.removeRange(0, nb.questions.length - 500);
+    }
+    Repo.i.save();
     setState(() {
       _generating = false;
       _questions = result!;
