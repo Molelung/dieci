@@ -50,9 +50,10 @@ class Repo extends ChangeNotifier {
     notifyListeners();
   }
 
-  void renameNotebook(String id, String name) {
+  void renameNotebook(String id, String name, {int? gradientIndex}) {
     final nb = notebook(id);
     nb.name = name;
+    if (gradientIndex != null) nb.gradientIndex = gradientIndex;
     save();
     notifyListeners();
   }
@@ -101,11 +102,15 @@ class Repo extends ChangeNotifier {
   }
 
   Future<void> _doSave() async {
-    final file = await Storage.notebooksFile();
-    await Storage.writeAtomic(
-      file,
-      jsonEncode(notebooks.map((e) => e.toJson()).toList()),
-    );
+    try {
+      final file = await Storage.notebooksFile();
+      await Storage.writeAtomic(
+        file,
+        jsonEncode(notebooks.map((e) => e.toJson()).toList()),
+      );
+    } catch (e) {
+      CrashLog.log('保存失败: $e');
+    }
   }
 
   static String _newId(String prefix) =>

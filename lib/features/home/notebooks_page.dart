@@ -323,56 +323,90 @@ class NotebooksPage extends StatelessWidget {
 
   Future<void> _renameNotebook(BuildContext context, dynamic nb) async {
     final controller = TextEditingController(text: nb.name as String);
-    final newName = await showDialog<String>(
+    var gradientIndex = nb.gradientIndex as int;
+    final result = await showDialog<(String, int)>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.transparent,
-        content: GlassCard(
-          radius: 24,
-          blur: 30,
-          padding: const EdgeInsets.all(22),
-          child: SizedBox(
-            width: 340,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('重命名笔记本',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Tokens.textPrimary)),
-                const SizedBox(height: 14),
-                GlassInput(controller: controller, label: '名称'),
-                const SizedBox(height: 18),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    GlassButton(
-                      label: '取消',
-                      style: GlassButtonStyle.ghost,
-                      onPressed: () => Navigator.pop(ctx),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          backgroundColor: Colors.transparent,
+          content: GlassCard(
+            radius: 24,
+            blur: 30,
+            padding: const EdgeInsets.all(22),
+            child: SizedBox(
+              width: 340,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('重命名笔记本',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Tokens.textPrimary)),
+                  const SizedBox(height: 14),
+                  GlassInput(controller: controller, label: '名称'),
+                  const SizedBox(height: 14),
+                  const Text('封面',
+                      style: TextStyle(
+                          fontSize: 12, color: Tokens.textSecondary)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 34,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: notebookGradients.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (_, i) => GestureDetector(
+                        onTap: () => setState(() => gradientIndex = i),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 34,
+                          decoration: BoxDecoration(
+                            gradient: notebookGradient(i),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: gradientIndex == i
+                                  ? Colors.white
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 10),
-                    GlassButton(
-                      label: '保存',
-                      icon: Icons.check_rounded,
-                      onPressed: () {
-                        final name = controller.text.trim();
-                        if (name.isEmpty) return;
-                        Navigator.pop(ctx, name);
-                      },
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      GlassButton(
+                        label: '取消',
+                        style: GlassButtonStyle.ghost,
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                      const SizedBox(width: 10),
+                      GlassButton(
+                        label: '保存',
+                        icon: Icons.check_rounded,
+                        onPressed: () {
+                          final name = controller.text.trim();
+                          if (name.isEmpty) return;
+                          Navigator.pop(ctx, (name, gradientIndex));
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
-    if (newName != null && newName.isNotEmpty) {
-      Repo.i.renameNotebook(nb.id as String, newName);
+    if (result != null && result.$1.isNotEmpty) {
+      Repo.i.renameNotebook(nb.id as String, result.$1,
+          gradientIndex: result.$2);
     }
   }
 

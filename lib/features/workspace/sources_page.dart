@@ -230,6 +230,12 @@ class _SourcesPageState extends State<SourcesPage> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '共 ${nb.sources.length} 个来源 · ${nb.totalChunks} 分块 · ${nb.sources.fold<int>(0, (s, x) => s + x.rawText.length)} 字符',
+                    style: const TextStyle(
+                        fontSize: 11, color: Tokens.textTertiary),
+                  ),
                 ],
               ),
             ),

@@ -22,6 +22,7 @@ class ReviewPage extends StatefulWidget {
 class _ReviewPageState extends State<ReviewPage> {
   bool _flashMode = false;
   bool _scopeMistakes = true;
+  bool _shuffle = false;
   QuestionType? _mistakeFilter;
 
   // 闪卡会话状态
@@ -41,6 +42,7 @@ class _ReviewPageState extends State<ReviewPage> {
       _toast(_scopeMistakes ? '还没有错题，先去刷题吧' : '还没有题目，先去生成吧');
       return;
     }
+    if (_shuffle) pool.shuffle();
     setState(() {
       _deck = List.of(pool);
       _wrong = [];
@@ -441,6 +443,12 @@ class _ReviewPageState extends State<ReviewPage> {
                       label: '全部题目',
                       selected: !_scopeMistakes,
                       onTap: () => setState(() => _scopeMistakes = false),
+                    ),
+                    const SizedBox(width: 8),
+                    GlassChip(
+                      label: '随机顺序',
+                      selected: _shuffle,
+                      onTap: () => setState(() => _shuffle = !_shuffle),
                     ),
                   ],
                 ),
