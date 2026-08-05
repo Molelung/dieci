@@ -427,6 +427,23 @@ class _ReviewPageState extends State<ReviewPage> {
                     ),
                     const SizedBox(width: 8),
                     GlassButton(
+                      label: '单张闪',
+                      icon: Icons.flip_rounded,
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () {
+                        setState(() {
+                          _flashMode = true;
+                          _deck = [q];
+                          _wrong = [];
+                          _index = 0;
+                          _flipped = false;
+                          _good = 0;
+                          _sessionDone = false;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    GlassButton(
                       label: '重做',
                       icon: Icons.replay_rounded,
                       style: GlassButtonStyle.ghost,
