@@ -160,6 +160,19 @@ class _ReviewPageState extends State<ReviewPage> {
           _stat('${nb.questions.length}', '题库题量'),
           if (nb.mistakes.isNotEmpty)
             GlassButton(
+              label: '错题→闪卡',
+              icon: Icons.style_rounded,
+              style: GlassButtonStyle.ghost,
+              onPressed: () {
+                setState(() {
+                  _flashMode = true;
+                  _scopeMistakes = true;
+                });
+                _startFlash(nb);
+              },
+            ),
+          if (nb.mistakes.isNotEmpty)
+            GlassButton(
               label: '全部重做',
               icon: Icons.replay_rounded,
               style: GlassButtonStyle.outline,

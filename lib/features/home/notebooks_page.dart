@@ -169,13 +169,42 @@ class NotebooksPage extends StatelessWidget {
                           style: GlassButtonStyle.outline,
                           onPressed: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
+                             MaterialPageRoute(
                                 builder: (_) => const SettingsPage()),
                           ),
                         ),
                       ],
                     ),
                   ),
+                  if (notebooks.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(28, 6, 28, 0),
+                      child: GlassCard(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
+                        child: Row(
+                          children: [
+                            _globalStat('${notebooks.length}', '笔记本'),
+                            const SizedBox(width: 26),
+                            _globalStat(
+                                '${notebooks.fold<int>(0, (s, n) => s + n.sources.length)}',
+                                '来源'),
+                            const SizedBox(width: 26),
+                            _globalStat(
+                                '${notebooks.fold<int>(0, (s, n) => s + n.totalChunks)}',
+                                '分块'),
+                            const SizedBox(width: 26),
+                            _globalStat(
+                                '${notebooks.fold<int>(0, (s, n) => s + n.questions.length)}',
+                                '题目'),
+                            const SizedBox(width: 26),
+                            _globalStat(
+                                '${notebooks.fold<int>(0, (s, n) => s + n.mistakes.length)}',
+                                '错题'),
+                          ],
+                        ),
+                      ),
+                    ),
                   Expanded(
                     child: notebooks.isEmpty
                         ? _emptyState(context)
@@ -467,6 +496,22 @@ class NotebooksPage extends StatelessWidget {
             style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
+                color: Tokens.textPrimary)),
+        Text(label,
+            style:
+                const TextStyle(fontSize: 11, color: Tokens.textTertiary)),
+      ],
+    );
+  }
+
+  Widget _globalStat(String value, String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value,
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
                 color: Tokens.textPrimary)),
         Text(label,
             style:
