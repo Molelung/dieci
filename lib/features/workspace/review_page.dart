@@ -737,7 +737,10 @@ class _FlipCard extends StatelessWidget {
                       ),
                       icon: Icons.lightbulb_rounded,
                       main: question.answer,
-                      sub: question.explain,
+                      sub: question.citation != null &&
+                              question.citation!.isNotEmpty
+                          ? '${question.explain}\n\n📖 出处：${question.citation}'
+                          : question.explain,
                     ),
                   )
                 : _face(
