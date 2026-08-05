@@ -882,6 +882,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     const Text('开源仓库：github.com/Molelung/dieci',
                         style: TextStyle(
                             fontSize: 11, color: Tokens.textTertiary)),
+                    const SizedBox(height: 4),
+                    Text('当前模型：${SettingsStore.i.model}',
+                        style: const TextStyle(
+                            fontSize: 11, color: Tokens.textTertiary)),
                     const SizedBox(height: 12),
                     if (_dataPath.isNotEmpty) ...[
                       Text('数据目录：$_dataPath',
