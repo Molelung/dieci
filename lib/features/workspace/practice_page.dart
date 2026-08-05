@@ -44,6 +44,7 @@ class _PracticePageState extends State<PracticePage> {
 
   final Set<QuestionType> _types = {QuestionType.single, QuestionType.tf};
   String _difficulty = '中等';
+  bool _mistakeFirst = false;
   int _count = 10;
   int _round = 0;
   bool _generating = false;
@@ -152,11 +153,28 @@ class _PracticePageState extends State<PracticePage> {
   }
 
   String _buildMaterial(Notebook nb) {
+    final sb = StringBuffer();
+    // 错题优先：先注入近期错题（题干+答案+解析），强化薄弱点
+    if (_mistakeFirst && nb.mistakes.isNotEmpty) {
+      sb.write('【近期错题回顾】\n');
+      var n = 0;
+      for (final m in nb.mistakes.take(5)) {
+        final q = m.question;
+        sb.write('错题 ${++n}：${q.question}\n');
+        sb.write('  答案：${q.answer}\n');
+        if (q.explain.isNotEmpty) {
+          sb.write(
+              '  解析：${q.explain.length > 120 ? q.explain.substring(0, 120) : q.explain}\n');
+        }
+      }
+      sb.write('\n\n');
+    }
     if (widget.presetSourceId != null) {
       final src = nb.sources
           .where((s) => s.id == widget.presetSourceId)
           .firstOrNull;
-      return src?.rawText ?? '';
+      sb.write(src?.rawText ?? '');
+      return sb.toString();
     }
     final chunks = nb.sources
         .expand((s) => s.chunks ?? <Chunk>[])
@@ -169,7 +187,8 @@ class _PracticePageState extends State<PracticePage> {
     for (final c in relevant) {
       _chunkMap['${c.index}'] = '${c.sourceName ?? '材料'}\n\n${c.text}';
     }
-    return relevant.map((c) => '[${c.index}] ${c.text}').join('\n\n');
+    sb.write(relevant.map((c) => '[${c.index}] ${c.text}').join('\n\n'));
+    return sb.toString();
   }
 
   Future<void> _generate() async {
@@ -571,11 +590,24 @@ class _PracticePageState extends State<PracticePage> {
             icon: Icons.track_changes_rounded,
           ),
           const SizedBox(height: 14),
-          GlassButton(
-            label: _generating ? '生成中…（第 ${_round + 1} 轮）' : '生成题目',
-            icon: Icons.auto_awesome_rounded,
-            loading: _generating,
-            onPressed: _generating ? null : _generate,
+          Row(
+            children: [
+              Expanded(
+                child: GlassChip(
+                  label: '错题优先（新题强化薄弱点）',
+                  selected: _mistakeFirst,
+                  selectedColor: Tokens.brandCyan,
+                  onTap: () => setState(() => _mistakeFirst = !_mistakeFirst),
+                ),
+              ),
+              const SizedBox(width: 10),
+              GlassButton(
+                label: _generating ? '生成中…（第 ${_round + 1} 轮）' : '生成题目',
+                icon: Icons.auto_awesome_rounded,
+                loading: _generating,
+                onPressed: _generating ? null : _generate,
+              ),
+            ],
           ),
         ],
       ),
