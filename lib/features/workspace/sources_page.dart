@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'package:file_picker/file_picker.dart';
@@ -205,6 +206,30 @@ class _SourcesPageState extends State<SourcesPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _exportSource(Source s) async {
+    final base = s.name.replaceAll(RegExp(r'\.(md|markdown|txt)$'), '');
+    try {
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: '导出来源',
+        fileName: '$base.md',
+        type: FileType.custom,
+        allowedExtensions: ['md'],
+        bytes: utf8.encode(s.rawText),
+      );
+      if (path == null) {
+        _toast('已取消导出');
+        return;
+      }
+      final target = path.endsWith('.md') ? path : '$path.md';
+      await File(target).writeAsString(s.rawText, encoding: utf8);
+      _toast('已导出：$target');
+    } catch (_) {
+      // 移动端保存受限时退化为复制
+      await Clipboard.setData(ClipboardData(text: s.rawText));
+      _toast('无法选择保存位置，已复制全文到剪贴板');
+    }
   }
 
   void _deleteSourceWithUndo(Notebook nb, Source s) {    Repo.i.removeSource(nb, s.id);
@@ -512,17 +537,26 @@ class _SourcesPageState extends State<SourcesPage> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: GlassButton(
-                    label: '复制全文',
-                    icon: Icons.copy_rounded,
-                    style: GlassButtonStyle.outline,
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: s.rawText));
-                      Navigator.pop(ctx);
-                    },
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GlassButton(
+                      label: '导出 .md',
+                      icon: Icons.save_alt_rounded,
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => _exportSource(s),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: '复制全文',
+                      icon: Icons.copy_rounded,
+                      style: GlassButtonStyle.outline,
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: s.rawText));
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
