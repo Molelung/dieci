@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
@@ -6,7 +7,9 @@ import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/glass_input.dart';
 import '../../core/widgets/gradient_background.dart';
+import '../../data/repository.dart';
 import '../../data/settings_store.dart';
+import '../../data/storage.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -26,6 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String? _detectMsg;
   List<String> _models = [];
   List<String> _proModels = [];
+  String _dataPath = '';
 
   @override
   void initState() {
@@ -33,6 +37,12 @@ class _SettingsPageState extends State<SettingsPage> {
     _keyController.text = SettingsStore.i.apiKey;
     _urlController.text = SettingsStore.i.baseUrl;
     _modelController.text = SettingsStore.i.model;
+    _loadDataPath();
+  }
+
+  Future<void> _loadDataPath() async {
+    final dir = await Storage.dir();
+    if (mounted) setState(() => _dataPath = dir.path);
   }
 
   Future<void> _save() async {
@@ -409,6 +419,30 @@ class _SettingsPageState extends State<SettingsPage> {
                       style: TextStyle(
                           fontSize: 12, height: 1.7, color: Tokens.textTertiary),
                     ),
+                    const SizedBox(height: 12),
+                    if (_dataPath.isNotEmpty) ...[
+                      Text('数据目录：$_dataPath',
+                          style: const TextStyle(
+                              fontSize: 11, color: Tokens.textTertiary)),
+                      const SizedBox(height: 4),
+                      Text(
+                          '已保存 ${Repo.i.notebooks.length} 个笔记本（含来源、题目、错题）。写入为原子操作，损坏自动回滚 .bak。',
+                          style: const TextStyle(
+                              fontSize: 11, color: Tokens.textTertiary)),
+                      if (Platform.isWindows) ...[
+                        const SizedBox(height: 8),
+                        GlassButton(
+                          label: '打开数据目录',
+                          icon: Icons.folder_open_rounded,
+                          style: GlassButtonStyle.ghost,
+                          onPressed: () {
+                            try {
+                              Process.start('explorer', [_dataPath]);
+                            } catch (_) {}
+                          },
+                        ),
+                      ],
+                    ],
                   ],
                 ),
               ),

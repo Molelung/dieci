@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
@@ -25,6 +26,8 @@ class OutlinePage extends StatefulWidget {
 class _OutlinePageState extends State<OutlinePage> {
   final _topicController = TextEditingController();
   final _selected = <String>{};
+  final _collapsed = <String>{};
+  CancelToken? _cancel;
   StreamSubscription<String>? _sub;
   bool _generating = false;
   String _status = '';
@@ -32,6 +35,7 @@ class _OutlinePageState extends State<OutlinePage> {
   @override
   void dispose() {
     _sub?.cancel();
+    _cancel?.cancel();
     _topicController.dispose();
     super.dispose();
   }
@@ -72,6 +76,7 @@ class _OutlinePageState extends State<OutlinePage> {
 
     final buf = StringBuffer();
     var lastCount = 0;
+    _cancel = CancelToken();
     try {
       _sub = client
           .streamGenerate(
@@ -79,6 +84,7 @@ class _OutlinePageState extends State<OutlinePage> {
             system: Prompts.outlineSystem(),
             temperature: 0.4,
             maxTokens: 4096,
+            cancelToken: _cancel,
           )
           .listen(
         (delta) {
@@ -182,6 +188,15 @@ class _OutlinePageState extends State<OutlinePage> {
     );
   }
 
+  static Set<String> _allNodeIds(List<OutlineNode> nodes) {
+    final ids = <String>{};
+    for (final n in nodes) {
+      ids.add(n.id);
+      ids.addAll(_allNodeIds(n.children));
+    }
+    return ids;
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -234,6 +249,21 @@ class _OutlinePageState extends State<OutlinePage> {
                       style: GlassButtonStyle.outline,
                       onPressed: () => _startPractice(nb),
                     ),
+                  if (hasOutline && !_generating) ...[
+                    GlassButton(
+                      label: '全选',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => setState(() {
+                        _selected.clear();
+                        _selected.addAll(_allNodeIds(nb.outline));
+                      }),
+                    ),
+                    GlassButton(
+                      label: '清空',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => setState(_selected.clear),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -253,6 +283,7 @@ class _OutlinePageState extends State<OutlinePage> {
                           _OutlineNodeTile(
                             node: node,
                             selected: _selected,
+                            collapsed: _collapsed,
                             level: 0,
                             onToggle: () => setState(() {}),
                           ),
@@ -310,12 +341,14 @@ class _OutlinePageState extends State<OutlinePage> {
 class _OutlineNodeTile extends StatelessWidget {
   final OutlineNode node;
   final Set<String> selected;
+  final Set<String> collapsed;
   final int level;
   final VoidCallback onToggle;
 
   const _OutlineNodeTile({
     required this.node,
     required this.selected,
+    required this.collapsed,
     required this.level,
     required this.onToggle,
   });
@@ -323,6 +356,8 @@ class _OutlineNodeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSel = selected.contains(node.id);
+    final isCollapsed = collapsed.contains(node.id);
+    final hasChildren = node.children.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -371,17 +406,37 @@ class _OutlineNodeTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (hasChildren)
+                  GestureDetector(
+                    onTap: () {
+                      if (isCollapsed) {
+                        collapsed.remove(node.id);
+                      } else {
+                        collapsed.add(node.id);
+                      }
+                      onToggle();
+                    },
+                    child: Icon(
+                      isCollapsed
+                          ? Icons.chevron_right_rounded
+                          : Icons.expand_more_rounded,
+                      size: 18,
+                      color: Tokens.textTertiary,
+                    ),
+                  ),
               ],
             ),
           ),
         ),
-        for (final child in node.children)
-          _OutlineNodeTile(
-            node: child,
-            selected: selected,
-            level: level + 1,
-            onToggle: onToggle,
-          ),
+        if (!isCollapsed)
+          for (final child in node.children)
+            _OutlineNodeTile(
+              node: child,
+              selected: selected,
+              collapsed: collapsed,
+              level: level + 1,
+              onToggle: onToggle,
+            ),
       ],
     );
   }

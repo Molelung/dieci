@@ -23,6 +23,17 @@ class SourcesPage extends StatefulWidget {
 
 class _SourcesPageState extends State<SourcesPage> {
   bool _importing = false;
+  String _query = '';
+
+  List<Source> _filtered(List<Source> list) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return list;
+    return list
+        .where((s) =>
+            s.name.toLowerCase().contains(q) ||
+            s.rawText.toLowerCase().contains(q))
+        .toList();
+  }
 
   Future<void> _pasteText() async {
     final controller = TextEditingController();
@@ -179,38 +190,54 @@ class _SourcesPageState extends State<SourcesPage> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 4),
-              child: Wrap(
-                spacing: 10,
-                runSpacing: 8,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GlassButton(
-                    label: _importing ? '导入中…' : '导入 Obsidian 笔记库',
-                    icon: Icons.folder_open_rounded,
-                    style: GlassButtonStyle.outline,
-                    loading: _importing,
-                    onPressed: _importing ? null : _pickVault,
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      GlassButton(
+                        label: _importing ? '导入中…' : '导入 Obsidian 笔记库',
+                        icon: Icons.folder_open_rounded,
+                        style: GlassButtonStyle.outline,
+                        loading: _importing,
+                        onPressed: _importing ? null : _pickVault,
+                      ),
+                      GlassButton(
+                        label: '导入 .md 文件',
+                        icon: Icons.upload_file_rounded,
+                        style: GlassButtonStyle.outline,
+                        onPressed: _pickFiles,
+                      ),
+                      GlassButton(
+                        label: '粘贴文本',
+                        icon: Icons.content_paste_rounded,
+                        style: GlassButtonStyle.ghost,
+                        onPressed: _pasteText,
+                      ),
+                    ],
                   ),
-                  GlassButton(
-                    label: '导入 .md 文件',
-                    icon: Icons.upload_file_rounded,
-                    style: GlassButtonStyle.outline,
-                    onPressed: _pickFiles,
-                  ),
-                  GlassButton(
-                    label: '粘贴文本',
-                    icon: Icons.content_paste_rounded,
-                    style: GlassButtonStyle.ghost,
-                    onPressed: _pasteText,
-                  ),
+                  if (nb.sources.length > 4) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: 300,
+                      child: GlassInput(
+                        hint: '搜索来源（名称 / 内容）…',
+                        icon: Icons.search_rounded,
+                        onChanged: (v) => setState(() => _query = v),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                itemCount: nb.sources.length,
+                itemCount: _filtered(nb.sources).length,
                 itemBuilder: (context, i) {
-                  final s = nb.sources[i];
+                  final s = _filtered(nb.sources)[i];
                   return _sourceCard(nb, s);
                 },
               ),

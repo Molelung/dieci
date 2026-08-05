@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
@@ -25,12 +26,14 @@ class _ChatPageState extends State<ChatPage> {
   final _scroll = ScrollController();
   final Map<String, String> _chunkMap = {};
   StreamSubscription<String>? _sub;
+  CancelToken? _cancel;
   bool _streaming = false;
   int _usedChunks = 0;
 
   @override
   void dispose() {
     _sub?.cancel();
+    _cancel?.cancel();
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
@@ -77,6 +80,7 @@ class _ChatPageState extends State<ChatPage> {
 
     final client = GeminiClient(SettingsStore.i);
     final buf = StringBuffer();
+    _cancel = CancelToken();
     try {
       _sub = client
           .streamGenerate(
@@ -84,6 +88,7 @@ class _ChatPageState extends State<ChatPage> {
             system: Prompts.chatSystem(),
             temperature: 0.5,
             maxTokens: 2048,
+            cancelToken: _cancel,
           )
           .listen(
         (delta) {

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
@@ -42,6 +43,7 @@ class _PracticePageState extends State<PracticePage> {
   int _round = 0;
   bool _generating = false;
   bool _presetMode = false;
+  CancelToken? _cancel;
   List<String> _errors = [];
   List<Question> _questions = [];
   Map<String, dynamic> _answers = {}; // qid -> String | Set<String>
@@ -71,8 +73,7 @@ class _PracticePageState extends State<PracticePage> {
   void initState() {
     super.initState();
     final nb = Repo.i.notebook(widget.notebookId);
-    if (widget.presetMistakeIds != null && widget.presetMistakeIds!.isNotEmpty) {
-      // 错题重做模式：直接从错题本加载，无需 AI 生成
+    if (widget.presetMistakeIds != null && widget.presetMistakeIds!.isNotEmpty) {      // 错题重做模式：直接从错题本加载，无需 AI 生成
       final ids = widget.presetMistakeIds!.toSet();
       _questions = nb.mistakes
           .where((m) => ids.contains(m.questionId))
@@ -90,6 +91,13 @@ class _PracticePageState extends State<PracticePage> {
     } else {
       _scopeName = '全部材料';
     }
+  }
+
+  @override
+  void dispose() {
+    _cancel?.cancel();
+    _keywordController.dispose();
+    super.dispose();
   }
 
   String _buildMaterial(Notebook nb) {
@@ -173,6 +181,7 @@ class _PracticePageState extends State<PracticePage> {
       ];
 
       final sb = StringBuffer();
+      _cancel = CancelToken();
       try {
         await for (final delta in client.streamGenerate(
           contents: [AiMessage('user', userParts.join('\n'))],
@@ -180,6 +189,7 @@ class _PracticePageState extends State<PracticePage> {
           temperature: 0.3,
           maxTokens: 8192,
           responseSchema: _schema,
+          cancelToken: _cancel,
         )) {
           sb.write(delta);
         }
