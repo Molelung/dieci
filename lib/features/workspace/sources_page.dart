@@ -14,6 +14,7 @@ import '../../data/repository.dart';
 import '../../data/settings_store.dart';
 import '../../models/models.dart';
 import '../../utils/obsidian_importer.dart';
+import 'practice_page.dart';
 
 class SourcesPage extends StatefulWidget {
   final String notebookId;
@@ -192,6 +193,18 @@ class _SourcesPageState extends State<SourcesPage> {
     } catch (_) {
       return '';
     }
+  }
+
+  void _practiceFromSource(Notebook nb, Source s) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PracticePage(
+          notebookId: widget.notebookId,
+          presetSourceId: s.id,
+        ),
+      ),
+    );
   }
 
   void _deleteSourceWithUndo(Notebook nb, Source s) {    Repo.i.removeSource(nb, s.id);
@@ -416,6 +429,15 @@ class _SourcesPageState extends State<SourcesPage> {
                       fontSize: 11, color: Tokens.textTertiary),
                 ),
               ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => _practiceFromSource(nb, s),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Icon(Icons.quiz_rounded,
+                  size: 18,
+                  color: Tokens.brandBlue.withValues(alpha: 0.8)),
             ),
           ),
           GestureDetector(

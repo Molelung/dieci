@@ -89,7 +89,7 @@ class _OutlinePageState extends State<OutlinePage> {
 
     setState(() {
       _generating = true;
-      _status = 'AI 正在生成大纲…（边生成边渲染）';
+      _status = '基于 ${chunks.length} 个相关分块生成大纲…（边生成边渲染）';
       nb.outline.clear();
       _selected.clear();
     });
