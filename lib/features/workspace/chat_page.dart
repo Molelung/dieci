@@ -9,6 +9,7 @@ import '../../core/theme/tokens.dart';
 import '../../core/widgets/error_toast.dart';
 import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
+import '../../core/widgets/glass_chip.dart';
 import '../../core/widgets/hero_art.dart';
 import '../../data/chunker.dart';
 import '../../data/repository.dart';
@@ -370,6 +371,28 @@ class _ChatPageState extends State<ChatPage> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 13, height: 1.7, color: Tokens.textSecondary),
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  for (final s in const [
+                    '总结这个主题的核心概念',
+                    '这章考试容易考什么',
+                    '帮我出 3 道判断题',
+                    '把难点讲得更通俗一些',
+                  ])
+                    GlassChip(
+                      label: s,
+                      selected: false,
+                      onTap: () {
+                        _controller.text = s;
+                        setState(() {});
+                      },
+                    ),
+                ],
               ),
             ],
           ),

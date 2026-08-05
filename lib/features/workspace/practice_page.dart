@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
 import '../../ai/validator.dart';
@@ -833,11 +834,14 @@ class _PracticePageState extends State<PracticePage> {
                           fontWeight: FontWeight.w700,
                           color: Tokens.success)),
                   const SizedBox(height: 6),
-                  Text(q.explain,
-                      style: const TextStyle(
-                          fontSize: 12.5,
-                          height: 1.6,
-                          color: Tokens.textSecondary)),
+                  MarkdownBody(
+                    data: q.explain,
+                    styleSheet: MarkdownStyleSheet(
+                      p: const TextStyle(
+                          fontSize: 12.5, height: 1.6, color: Tokens.textSecondary),
+                      listBullet: const TextStyle(color: Tokens.textSecondary),
+                    ),
+                  ),
                   if (q.citation != null && q.citation!.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     GestureDetector(
