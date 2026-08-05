@@ -22,6 +22,10 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _saved = false;
   bool _testing = false;
   String? _testResult;
+  bool _detecting = false;
+  String? _detectMsg;
+  List<String> _models = [];
+  List<String> _proModels = [];
 
   @override
   void initState() {
@@ -62,6 +66,38 @@ class _SettingsPageState extends State<SettingsPage> {
       setState(() => _testResult = '✗ 失败：$e');
     } finally {
       setState(() => _testing = false);
+    }
+  }
+
+  /// 解析官方 `GET /v1beta/models` 接口 + 探测 Pro 模型可用性
+  Future<void> _detect() async {
+    final client = GeminiClient(SettingsStore.i);
+    setState(() {
+      _detecting = true;
+      _detectMsg = null;
+      _models = [];
+      _proModels = [];
+    });
+    try {
+      final models = await client.listModels();
+      final proModels = await client.detectProModels();
+      if (!mounted) return;
+      setState(() {
+        _models = models;
+        _proModels = proModels;
+        if (models.isNotEmpty && _modelController.text.trim().isEmpty) {
+          _modelController.text = models.first;
+          SettingsStore.i.model = models.first;
+        }
+        final proOk = proModels.isNotEmpty ? '✓ 可用 Pro 模型：${proModels.take(3).join('、')}' : '✗ 未探测到 Pro 专属模型（可能只有免费档）';
+        _detectMsg = models.isEmpty
+            ? '未拉取到模型列表（请检查 Key / 网络）'
+            : '已解析到 ${models.length} 个模型；$proOk';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _detectMsg = '检测失败：$e');
+    } finally {
+      if (mounted) setState(() => _detecting = false);
     }
   }
 
@@ -108,7 +144,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      '在 aistudio.google.com/app/apikey 用你的 Google 账号免费创建 Key。\n拥有 Google AI Pro 订阅时，同一 Key 自动获得更高速率限制。Key 仅加密保存在本机。',
+                      '在 aistudio.google.com/app/apikey 用你的 Google 账号免费创建 Key。\n拥有 Google AI Pro 订阅时，同一 Key 自动获得更高速率限制；\n点下方「解析官方接口」可直接拉取你的账号可用模型、并探测 Pro 模型。',
                       style: TextStyle(
                           fontSize: 12, height: 1.6, color: Tokens.textTertiary),
                     ),
@@ -142,6 +178,62 @@ class _SettingsPageState extends State<SettingsPage> {
                           _modelChip(m),
                       ],
                     ),
+                    if (_models.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color:
+                                  Tokens.brandBlue.withValues(alpha: 0.16)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _modelController.text.trim().isNotEmpty &&
+                                    _models.contains(_modelController.text.trim())
+                                ? _modelController.text.trim()
+                                : null,
+                            isExpanded: true,
+                            hint: const Text('选择已解析的可用模型',
+                                style: TextStyle(
+                                    fontSize: 13, color: Tokens.textTertiary)),
+                            dropdownColor: Colors.white,
+                            iconEnabledColor: Tokens.brandBlue,
+                            items: [
+                              for (final m in _models)
+                                DropdownMenuItem(
+                                  value: m,
+                                  child: Row(
+                                    children: [
+                                      if (m.contains('pro'))
+                                        const Icon(Icons.workspace_premium_rounded,
+                                            size: 14, color: Tokens.brandBlue),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(m,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                fontSize: 13,
+                                                color: Tokens.textPrimary)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                            onChanged: (v) {
+                              if (v == null) return;
+                              setState(() {
+                                _modelController.text = v;
+                                SettingsStore.i.model = v;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -193,6 +285,53 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 10),
+                    GlassButton(
+                      label: _detecting ? '解析接口中…' : '解析官方接口 · 检测 Pro 权限',
+                      icon: Icons.workspace_premium_rounded,
+                      style: GlassButtonStyle.ghost,
+                      loading: _detecting,
+                      onPressed: _detecting ? null : _detect,
+                    ),
+                    if (_detectMsg != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color:
+                                  Tokens.brandBlue.withValues(alpha: 0.12)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _detectMsg!,
+                              style: TextStyle(
+                                  fontSize: 12.5,
+                                  height: 1.5,
+                                  color: _detectMsg!.contains('✗')
+                                      ? Tokens.warn
+                                      : Tokens.textSecondary),
+                            ),
+                            if (_models.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                _models.join(' · '),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Tokens.textTertiary),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                     if (_testResult != null) ...[
                       const SizedBox(height: 12),
                       Text(_testResult!,

@@ -132,6 +132,93 @@ class GeminiClient {
     return sb.toString();
   }
 
+  /// 拉取当前 Key 可见的 Gemini 模型列表（`GET /v1beta/models`）
+  /// 结果按「Pro/推理 → Flash → Flash-Lite」排序，供设置页挑选。
+  Future<List<String>> listModels() async {
+    if (!hasKey) return const [];
+    try {
+      final res = await _dio.get<dynamic>(
+        '$_base/models',
+        options: Options(headers: {'x-goog-api-key': settings.apiKey}),
+      );
+      final data = res.data;
+      if (data is! Map || data['models'] is! List) return const [];
+      final names = <String>[];
+      for (final m in data['models'] as List) {
+        if (m is! Map) continue;
+        final name = m['name']?.toString();
+        if (name == null || !name.startsWith('models/gemini-')) continue;
+        final short = name.substring('models/'.length);
+        if (short.contains('image') ||
+            short.contains('embedding') ||
+            short.contains('audio') ||
+            short.contains('nano')) {
+          continue;
+        }
+        names.add(short);
+      }
+      _sortByPriority(names);
+      return names;
+    } on DioException {
+      return const [];
+    }
+  }
+
+  /// 探测某个模型是否可用，返回 (模型, 是否成功, 提示)
+  Future<(String, bool, String)> probeModel(String model) async {
+    try {
+      await generateOnce(
+        contents: [const AiMessage('user', '只回复两个字：OK')],
+        temperature: 0,
+      );
+      return (model, true, '可用');
+    } catch (e) {
+      return (model, false, e.toString());
+    }
+  }
+
+  /// 探测 Pro 订阅：依次探测 pro 系模型，返回可用的 Pro 模型列表
+  Future<List<String>> detectProModels() async {
+    const candidates = [
+      'gemini-3.1-pro-preview',
+      'gemini-3-pro-preview',
+      'gemini-3-flash-preview',
+      'gemini-3.6-flash',
+      'gemini-2.5-flash',
+    ];
+    final ok = <String>[];
+    for (final m in candidates) {
+      try {
+        await generateOnce(
+          contents: [const AiMessage('user', 'OK')],
+          temperature: 0,
+        );
+        ok.add(m);
+      } catch (_) {
+        // 探测失败继续下一个
+      }
+    }
+    return ok;
+  }
+
+  static void _sortByPriority(List<String> names) {
+    int rank(String n) {
+      if (n.contains('pro-preview') || n.contains('pro-exp')) return 0;
+      if (n.contains('pro')) return 1;
+      if (n.contains('deep-think')) return 2;
+      if (n.contains('flash-preview')) return 3;
+      if (n.contains('flash-lite')) return 4;
+      if (n.contains('flash')) return 5;
+      return 6;
+    }
+
+    names.sort((a, b) {
+      final r = rank(a).compareTo(rank(b));
+      if (r != 0) return r;
+      return b.compareTo(a);
+    });
+  }
+
   String? _extractText(dynamic json) {
     try {
       final candidates = json['candidates'] as List?;
