@@ -38,6 +38,7 @@ class PracticePage extends StatefulWidget {
 class _PracticePageState extends State<PracticePage> {
   final _keywordController = TextEditingController();
   final _shortAnswers = <String, String>{};
+  final _scroll = ScrollController();
 
   final Set<QuestionType> _types = {QuestionType.single, QuestionType.tf};
   String _difficulty = '中等';
@@ -104,7 +105,18 @@ class _PracticePageState extends State<PracticePage> {
     _cancel?.cancel();
     _timer?.cancel();
     _keywordController.dispose();
+    _scroll.dispose();
     super.dispose();
+  }
+
+  void _jumpTo(int index) {
+    if (!_scroll.hasClients) return;
+    // 近似定位：每张卡片约占 180px（含间距），跳转后由用户微调
+    _scroll.animateTo(
+      (index * 190.0).clamp(0.0, _scroll.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   void _startTimer() {
@@ -396,10 +408,12 @@ class _PracticePageState extends State<PracticePage> {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      controller: _scroll,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       children: [
         _paramCard(),
         _submitBar(),
+        if (_questions.length >= 6) _jumpRow(),
         if (_errors.isNotEmpty) _errorCard(),
         if (_generating) _generatingCard(),
         if (_submitted) _resultBanner(),
@@ -582,6 +596,44 @@ class _PracticePageState extends State<PracticePage> {
             Icon(Icons.autorenew_rounded,
                 size: 16, color: Tokens.brandBlue.withValues(alpha: 0.8)),
         ],
+      ),
+    );
+  }
+
+  Widget _jumpRow() {
+    return GlassCard(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: SizedBox(
+        height: 30,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _questions.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 6),
+          itemBuilder: (context, i) => GestureDetector(
+            onTap: () => _jumpTo(i),
+            child: Container(
+              width: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: _answers[_questions[i].id] != null
+                    ? Tokens.brandBlue.withValues(alpha: 0.14)
+                    : Colors.white.withValues(alpha: 0.75),
+                border: Border.all(
+                  color: Tokens.brandBlue.withValues(alpha: 0.18),
+                ),
+              ),
+              child: Text('${i + 1}',
+                  style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: _answers[_questions[i].id] != null
+                          ? Tokens.brandBlue
+                          : Tokens.textSecondary)),
+            ),
+          ),
+        ),
       ),
     );
   }

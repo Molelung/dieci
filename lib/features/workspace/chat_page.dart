@@ -634,7 +634,8 @@ class _ChatPageState extends State<ChatPage> {
             child: TextField(
               controller: _controller,
               enabled: !_streaming,
-              maxLines: 1,
+              minLines: 1,
+              maxLines: 4,
               cursorColor: Tokens.brandBlue,
               style: const TextStyle(color: Tokens.textPrimary, fontSize: 14),
               decoration: InputDecoration(
