@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
 import '../../core/theme/tokens.dart';
+import '../../core/widgets/error_toast.dart';
 import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/glass_input.dart';
@@ -12,6 +13,7 @@ import '../../data/chunker.dart';
 import '../../data/repository.dart';
 import '../../data/settings_store.dart';
 import '../../models/models.dart';
+import '../../features/settings/settings_page.dart';
 import 'practice_page.dart';
 
 class OutlinePage extends StatefulWidget {
@@ -107,6 +109,14 @@ class _OutlinePageState extends State<OutlinePage> {
             _status = '生成失败：$e';
           });
           Repo.i.save();
+          showAiError(
+            context,
+            '$e',
+            onSettings: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsPage()),
+            ),
+          );
         },
         onDone: () {
           if (!mounted) return;

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
 import '../../core/theme/tokens.dart';
+import '../../core/widgets/error_toast.dart';
 import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/hero_art.dart';
@@ -11,6 +12,7 @@ import '../../data/chunker.dart';
 import '../../data/repository.dart';
 import '../../data/settings_store.dart';
 import '../../models/models.dart';
+import '../../features/settings/settings_page.dart';
 import 'practice_page.dart';
 
 class ChatPage extends StatefulWidget {
@@ -103,6 +105,14 @@ class _ChatPageState extends State<ChatPage> {
           modelMsg.text = '⚠️ $e';
           setState(() => _streaming = false);
           Repo.i.save();
+          showAiError(
+            context,
+            '$e',
+            onSettings: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsPage()),
+            ),
+          );
         },
         onDone: () {
           if (!mounted) return;
@@ -396,7 +406,19 @@ class _ChatPageState extends State<ChatPage> {
                             fontSize: 13.5,
                             height: 1.6,
                             color: Tokens.textPrimary))
-                    : TextSpan(children: _buildSpans(m.text)),
+                    : TextSpan(
+                        children: [
+                          ..._buildSpans(m.text),
+                          if (_streaming && m.text.isNotEmpty)
+                            TextSpan(
+                              text: '▍',
+                              style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Tokens.brandBlue),
+                            ),
+                        ],
+                      ),
               ),
             ],
           ),

@@ -297,6 +297,8 @@ class NotebooksPage extends StatelessWidget {
                   children: [
                     _stat('${(nb.sources as List).length}', '来源'),
                     const SizedBox(width: 14),
+                    _stat('${_countNodes(nb.outline as List)}', '大纲'),
+                    const SizedBox(width: 14),
                     _stat('${(nb.questions as List).length}', '题目'),
                     const SizedBox(width: 14),
                     _stat('${(nb.mistakes as List).length}', '错题'),
@@ -330,5 +332,10 @@ class NotebooksPage extends StatelessWidget {
                 const TextStyle(fontSize: 11, color: Tokens.textTertiary)),
       ],
     );
+  }
+
+  static int _countNodes(dynamic nodes) {
+    if (nodes is! List) return 0;
+    return nodes.fold(0, (sum, n) => sum + 1 + _countNodes((n as dynamic).children ?? const []));
   }
 }

@@ -6,6 +6,7 @@ import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
 import '../../ai/validator.dart';
 import '../../core/theme/tokens.dart';
+import '../../core/widgets/error_toast.dart';
 import '../../core/widgets/glass_button.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/glass_chip.dart';
@@ -14,6 +15,7 @@ import '../../data/chunker.dart';
 import '../../data/repository.dart';
 import '../../data/settings_store.dart';
 import '../../models/models.dart';
+import '../../features/settings/settings_page.dart';
 
 class PracticePage extends StatefulWidget {
   final String notebookId;
@@ -219,10 +221,19 @@ class _PracticePageState extends State<PracticePage> {
           sb.write(delta);
         }
       } catch (e) {
+        if (!mounted) return;
         setState(() {
           _generating = false;
           _errors = ['请求失败：$e'];
         });
+        showAiError(
+          context,
+          '$e',
+          onSettings: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SettingsPage()),
+          ),
+        );
         return;
       }
 
