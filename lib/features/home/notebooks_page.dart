@@ -6,12 +6,20 @@ import '../../core/widgets/glass_input.dart';
 import '../../core/widgets/gradient_background.dart';
 import '../../core/widgets/hero_art.dart';
 import '../../data/repository.dart';
+import '../../data/settings_store.dart';
 import '../../models/models.dart';
 import '../settings/settings_page.dart';
 import '../workspace/workspace_page.dart';
 
-class NotebooksPage extends StatelessWidget {
+class NotebooksPage extends StatefulWidget {
   const NotebooksPage({super.key});
+
+  @override
+  State<NotebooksPage> createState() => _NotebooksPageState();
+}
+
+class _NotebooksPageState extends State<NotebooksPage> {
+  bool _showKeyHint = true;
 
   Future<void> _createNotebook(BuildContext context) async {
     final nameController = TextEditingController();
@@ -176,6 +184,45 @@ class NotebooksPage extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (_showKeyHint && SettingsStore.i.apiKey.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(28, 8, 28, 0),
+                      child: GlassCard(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.key_rounded,
+                                size: 18, color: Tokens.brandBlue),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                '尚未配置 Gemini API Key，AI 功能（大纲/出题/对话）不可用。',
+                                style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: Tokens.textSecondary),
+                              ),
+                            ),
+                            GlassButton(
+                              label: '去配置',
+                              style: GlassButtonStyle.outline,
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const SettingsPage()),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              onTap: () =>
+                                  setState(() => _showKeyHint = false),
+                              child: const Icon(Icons.close_rounded,
+                                  size: 16, color: Tokens.textTertiary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   if (notebooks.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(28, 6, 28, 0),

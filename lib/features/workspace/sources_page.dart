@@ -173,6 +173,27 @@ class _SourcesPageState extends State<SourcesPage> {
     }
   }
 
+  void _deleteSourceWithUndo(Notebook nb, Source s) {
+    Repo.i.removeSource(nb, s.id);
+    final messenger = ScaffoldMessenger.of(context)..clearSnackBars();
+    messenger.showSnackBar(SnackBar(
+      content: Text('已删除「${s.name}」'),
+      duration: const Duration(seconds: 4),
+      action: SnackBarAction(
+        label: '撤销',
+        onPressed: () {
+          Repo.i.addSource(
+            nb,
+            name: s.name,
+            text: s.rawText,
+            type: s.type,
+            filePath: s.filePath,
+          );
+        },
+      ),
+    ));
+  }
+
   void _addSource(String name, String text, String type, {String? filePath}) {
     final nb = Repo.i.notebook(widget.notebookId);
     Repo.i.addSource(
@@ -369,7 +390,7 @@ class _SourcesPageState extends State<SourcesPage> {
             ),
           ),
           GestureDetector(
-            onTap: () => Repo.i.removeSource(nb, s.id),
+            onTap: () => _deleteSourceWithUndo(nb, s),
             child: Icon(Icons.delete_outline_rounded,
                 size: 18,
                 color: Tokens.textTertiary.withValues(alpha: 0.7)),
