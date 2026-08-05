@@ -86,6 +86,17 @@ class _PracticePageState extends State<PracticePage> {
           .toList();
       _presetMode = true;
       _scopeName = '错题重做（${_questions.length} 题）';
+      // 错题也并入题库（去重），保证「闪卡-全部题目」覆盖
+      for (final q in _questions) {
+        if (nb.questions.any((e) => e.question.trim() == q.question.trim())) {
+          continue;
+        }
+        nb.questions.add(q);
+      }
+      if (nb.questions.length > 500) {
+        nb.questions.removeRange(0, nb.questions.length - 500);
+      }
+      Repo.i.save();
       _startTimer();
     } else if (widget.presetSourceId != null) {
       final src = nb.sources
