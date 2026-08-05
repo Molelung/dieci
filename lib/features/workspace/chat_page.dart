@@ -45,14 +45,17 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _streaming) return;
+    _controller.clear();
+    await _sendText(text);
+  }
 
+  Future<void> _sendText(String text) async {
+    if (text.isEmpty || _streaming) return;
     final nb = Repo.i.notebook(widget.notebookId);
     if (nb.sources.isEmpty) {
       _toast('没有学习材料，请先到「来源」页导入');
       return;
     }
-
-    _controller.clear();
     nb.chatMessages.add(ChatMessage(
       role: 'user',
       text: text,
@@ -176,7 +179,6 @@ class _ChatPageState extends State<ChatPage> {
     );
     _toast('已沉淀为来源，可参与大纲生成与出题');
   }
-
   void _practiceFrom(Notebook nb, ChatMessage msg) {
     final src = Repo.i.addSource(
       nb,
@@ -193,6 +195,30 @@ class _ChatPageState extends State<ChatPage> {
         ),
       ),
     );
+  }
+
+  /// 重新生成：删除该条及其后的消息，回到对应的用户提问重跑
+  void _regenerateAt(int index) {
+    if (_streaming) return;
+    final nb = Repo.i.notebook(widget.notebookId);
+    final msgs = nb.chatMessages;
+    var ui = index - 1;
+    while (ui >= 0 && msgs[ui].role != 'user') {
+      ui--;
+    }
+    if (ui < 0) return;
+    final question = msgs[ui].text;
+    msgs.removeRange(ui, msgs.length);
+    Repo.i.save();
+    setState(() {});
+    _sendText(question);
+  }
+
+  void _deleteAt(int index) {
+    final nb = Repo.i.notebook(widget.notebookId);
+    nb.chatMessages.removeAt(index);
+    Repo.i.save();
+    setState(() {});
   }
 
   void _scrollToBottom() {
@@ -308,7 +334,7 @@ class _ChatPageState extends State<ChatPage> {
                       itemCount: nb.chatMessages.length,
                       itemBuilder: (context, i) {
                         final m = nb.chatMessages[i];
-                        return _bubble(nb, m);
+                        return _bubble(nb, m, index: i);
                       },
                     ),
             ),
@@ -350,7 +376,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _bubble(Notebook nb, ChatMessage m) {
+  Widget _bubble(Notebook nb, ChatMessage m, {required int index}) {
     final isUser = m.role == 'user';
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -406,6 +432,18 @@ class _ChatPageState extends State<ChatPage> {
                             icon: Icons.quiz_rounded,
                             tooltip: '据此出题',
                             onTap: () => _practiceFrom(nb, m),
+                          ),
+                          const SizedBox(width: 6),
+                          _miniAction(
+                            icon: Icons.refresh_rounded,
+                            tooltip: '重新生成',
+                            onTap: () => _regenerateAt(index),
+                          ),
+                          const SizedBox(width: 6),
+                          _miniAction(
+                            icon: Icons.delete_outline_rounded,
+                            tooltip: '删除此条',
+                            onTap: () => _deleteAt(index),
                           ),
                         ],
                       ),

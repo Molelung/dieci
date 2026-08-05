@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
 import '../../core/theme/tokens.dart';
@@ -217,6 +218,29 @@ class _OutlinePageState extends State<OutlinePage> {
     return ids;
   }
 
+  Future<void> _copyOutline(Notebook nb) async {
+    final md = _outlineToMarkdown(nb.outline);
+    if (md.trim().isEmpty) {
+      _toast('大纲为空');
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: md));
+    if (!mounted) return;
+    _toast('大纲已复制为 Markdown');
+  }
+
+  static String _outlineToMarkdown(List<OutlineNode> nodes) {
+    final sb = StringBuffer();
+    void walk(List<OutlineNode> ns) {
+      for (final n in ns) {
+        sb.write('${'#' * n.depth} ${n.title}\n');
+        walk(n.children);
+      }
+    }
+    walk(nodes);
+    return sb.toString();
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -282,6 +306,12 @@ class _OutlinePageState extends State<OutlinePage> {
                       label: '清空',
                       style: GlassButtonStyle.ghost,
                       onPressed: () => setState(_selected.clear),
+                    ),
+                    GlassButton(
+                      label: '复制大纲',
+                      icon: Icons.copy_rounded,
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => _copyOutline(nb),
                     ),
                   ],
                 ],

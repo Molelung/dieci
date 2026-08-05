@@ -50,8 +50,15 @@ class Repo extends ChangeNotifier {
     notifyListeners();
   }
 
-  Notebook notebook(String id) =>
-      notebooks.firstWhere((n) => n.id == id, orElse: () => notebooks.first);
+  Notebook notebook(String id) {
+    if (notebooks.isEmpty) {
+      return Notebook(id: 'empty', name: '空', gradientIndex: 0, createdAt: '');
+    }
+    return notebooks.firstWhere(
+      (n) => n.id == id,
+      orElse: () => notebooks.first,
+    );
+  }
 
   Source addSource(
     Notebook nb, {
