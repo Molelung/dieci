@@ -96,6 +96,27 @@ class Repo extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 错题去重：同题干只保留一条（刷新作答时间与快照）
+  void addMistake(Notebook nb, Question q) {
+    final text = q.question.trim();
+    final idx = nb.mistakes.indexWhere(
+        (m) => m.question.question.trim() == text);
+    if (idx != -1) {
+      nb.mistakes[idx].questionJson = jsonEncode(q.toJson());
+      nb.mistakes[idx].answeredAt = DateTime.now().toIso8601String();
+    } else {
+      nb.mistakes.insert(
+        0,
+        Mistake(
+          questionId: q.id,
+          questionJson: jsonEncode(q.toJson()),
+          answeredAt: DateTime.now().toIso8601String(),
+        ),
+      );
+    }
+    save();
+  }
+
   /// 串行写入队列：避免高频率改动时并发写同一文件导致损坏
   void save() {
     _writeQueue = _writeQueue.then((_) => _doSave());

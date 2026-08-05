@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme/tokens.dart';
@@ -61,18 +60,7 @@ class _ReviewPageState extends State<ReviewPage> {
       // 越错越练：不会的题目自动写回错题本（去重）
       final nb = Repo.i.notebook(widget.notebookId);
       final q = _deck[_index];
-      final exists = nb.mistakes.any((m) => m.questionId == q.id);
-      if (!exists) {
-        nb.mistakes.insert(
-          0,
-          Mistake(
-            questionId: q.id,
-            questionJson: jsonEncode(q.toJson()),
-            answeredAt: DateTime.now().toIso8601String(),
-          ),
-        );
-        Repo.i.save();
-      }
+      Repo.i.addMistake(nb, q);
     }
     if (_index + 1 >= _deck.length) {
       setState(() {

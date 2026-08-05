@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../ai/gemini_client.dart';
@@ -363,14 +362,7 @@ class _PracticePageState extends State<PracticePage> {
     } else {
       for (final q in _questions) {
         if (!_isCorrect(q)) {
-          nb.mistakes.insert(
-            0,
-            Mistake(
-              questionId: q.id,
-              questionJson: jsonEncode(q.toJson()),
-              answeredAt: DateTime.now().toIso8601String(),
-            ),
-          );
+          Repo.i.addMistake(nb, q);
         }
       }
     }
