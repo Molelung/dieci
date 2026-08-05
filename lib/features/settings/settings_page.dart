@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
@@ -43,6 +45,128 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadDataPath() async {
     final dir = await Storage.dir();
     if (mounted) setState(() => _dataPath = dir.path);
+  }
+
+  Future<void> _exportData() async {
+    final file = await Storage.notebooksFile();
+    if (!file.existsSync()) {
+      _toast('还没有数据可导出');
+      return;
+    }
+    final now = DateTime.now();
+    String two(int v) => v.toString().padLeft(2, '0');
+    final name =
+        'dieci-备份-${now.year}${two(now.month)}${two(now.day)}-${two(now.hour)}${two(now.minute)}.json';
+    String? path;
+    try {
+      path = await FilePicker.platform.saveFile(
+        dialogTitle: '导出叠词备份',
+        fileName: name,
+        type: FileType.any,
+        bytes: await file.readAsBytes(),
+      );
+    } catch (_) {
+      path = null;
+    }
+    if (path == null) {
+      _toast('未选择保存位置，备份文件仍在：${file.path}');
+      return;
+    }
+    if (!path.endsWith('.json')) path = '$path.json';
+    await File(path).writeAsBytes(await file.readAsBytes());
+    _toast('已导出：$path');
+  }
+
+  Future<void> _importData() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      allowMultiple: false,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final f = result.files.single;
+    String content;
+    try {
+      if (f.path != null) {
+        content = await File(f.path!).readAsString();
+      } else if (f.bytes != null) {
+        content = utf8.decode(f.bytes!);
+      } else {
+        _toast('无法读取该文件');
+        return;
+      }
+    } catch (e) {
+      _toast('读取失败：$e');
+      return;
+    }
+    try {
+      final list = jsonDecode(content);
+      if (list is! List) throw const FormatException('不是备份数组');
+    } catch (e) {
+      _toast('备份文件格式不正确：$e');
+      return;
+    }
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(22),
+          child: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('导入备份将覆盖当前数据，确定？',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Tokens.textPrimary)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GlassButton(
+                      label: '取消',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: '导入',
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    final file = await Storage.notebooksFile();
+    try {
+      if (file.existsSync()) {
+        await file.copy(
+            '${file.path}.pre-import-${DateTime.now().millisecondsSinceEpoch}');
+      }
+      await Storage.writeAtomic(file, content);
+      await Repo.i.init();
+      _toast('导入成功，覆盖前已自动备份当前数据');
+    } catch (e) {
+      _toast('导入失败：$e');
+    }
+  }
+
+  void _toast(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(msg)));
   }
 
   Future<void> _save() async {
@@ -442,6 +566,25 @@ class _SettingsPageState extends State<SettingsPage> {
                           },
                         ),
                       ],
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
+                        children: [
+                          GlassButton(
+                            label: '导出备份',
+                            icon: Icons.save_alt_rounded,
+                            style: GlassButtonStyle.outline,
+                            onPressed: _exportData,
+                          ),
+                          GlassButton(
+                            label: '导入备份',
+                            icon: Icons.upload_file_rounded,
+                            style: GlassButtonStyle.ghost,
+                            onPressed: _importData,
+                          ),
+                        ],
+                      ),
                     ],
                   ],
                 ),

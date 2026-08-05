@@ -44,6 +44,9 @@ class _PracticePageState extends State<PracticePage> {
   bool _generating = false;
   bool _presetMode = false;
   CancelToken? _cancel;
+  Timer? _timer;
+  Stopwatch _stopwatch = Stopwatch();
+  String _elapsed = '00:00';
   List<String> _errors = [];
   List<Question> _questions = [];
   Map<String, dynamic> _answers = {}; // qid -> String | Set<String>
@@ -81,6 +84,7 @@ class _PracticePageState extends State<PracticePage> {
           .toList();
       _presetMode = true;
       _scopeName = '错题重做（${_questions.length} 题）';
+      _startTimer();
     } else if (widget.presetSourceId != null) {
       final src = nb.sources
           .where((s) => s.id == widget.presetSourceId)
@@ -96,8 +100,28 @@ class _PracticePageState extends State<PracticePage> {
   @override
   void dispose() {
     _cancel?.cancel();
+    _timer?.cancel();
     _keywordController.dispose();
     super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _stopwatch
+      ..reset()
+      ..start();
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted || _submitted) {
+        t.cancel();
+        return;
+      }
+      final m =
+          _stopwatch.elapsed.inMinutes.toString().padLeft(2, '0');
+      final s =
+          (_stopwatch.elapsed.inSeconds % 60).toString().padLeft(2, '0');
+      final text = '$m:$s';
+      if (text != _elapsed) setState(() => _elapsed = text);
+    });
   }
 
   String _buildMaterial(Notebook nb) {
@@ -155,6 +179,7 @@ class _PracticePageState extends State<PracticePage> {
       _selfAssessed = {};
       _submitted = false;
     });
+    _startTimer();
 
     var current = req;
     var round = 0;
@@ -228,7 +253,63 @@ class _PracticePageState extends State<PracticePage> {
     _toast('生成完成：${_questions.length} 题');
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(22),
+          child: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.task_alt_rounded,
+                    size: 34, color: Tokens.brandBlue),
+                const SizedBox(height: 12),
+                const Text('确认交卷？',
+                    style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: Tokens.textPrimary)),
+                const SizedBox(height: 8),
+                Text('已作答 ${_answeredCount()} / ${_questions.length} 题，用时 $_elapsed',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 12.5,
+                        height: 1.6,
+                        color: Tokens.textSecondary)),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GlassButton(
+                      label: '再想想',
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => Navigator.pop(ctx, false),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassButton(
+                      label: '交卷',
+                      icon: Icons.check_rounded,
+                      onPressed: () => Navigator.pop(ctx, true),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    _submitNow();
+  }
+
+  void _submitNow() {
     var correct = 0;
     for (final q in _questions) {
       final a = _answers[q.id];
@@ -271,6 +352,7 @@ class _PracticePageState extends State<PracticePage> {
       }
     }
     Repo.i.save();
+    _stopwatch.stop();
     setState(() {
       _submitted = true;
       _score = correct;
@@ -310,8 +392,8 @@ class _PracticePageState extends State<PracticePage> {
         if (_errors.isNotEmpty) _errorCard(),
         if (_generating) _generatingCard(),
         if (_submitted) _resultBanner(),
-        for (final q in _questions)
-          _questionCard(q),
+        for (var i = 0; i < _questions.length; i++)
+          _questionCard(_questions[i], index: i),
       ],
     );
   }
@@ -553,11 +635,7 @@ class _PracticePageState extends State<PracticePage> {
                         color: Tokens.textPrimary)),
                 const SizedBox(height: 3),
                 Text(
-                  pct >= 90
-                      ? '掌握得很好！错题已进错题本'
-                      : pct >= 60
-                          ? '继续加油，错题已自动进错题本'
-                          : '建议回到大纲复习后重刷，错题已记录',
+                  '用时 $_elapsed · ${pct >= 90 ? '掌握得很好！错题已进错题本' : pct >= 60 ? '继续加油，错题已自动进错题本' : '建议回到大纲复习后重刷，错题已记录'}',
                   style: const TextStyle(
                       fontSize: 12, color: Tokens.textSecondary),
                 ),
@@ -569,7 +647,7 @@ class _PracticePageState extends State<PracticePage> {
     );
   }
 
-  Widget _questionCard(Question q) {
+  Widget _questionCard(Question q, {required int index}) {
     final submitted = _submitted;
     final isCorrect = _isCorrect(q);
     final answered = _answers[q.id] != null ||
@@ -595,6 +673,10 @@ class _PracticePageState extends State<PracticePage> {
           Row(
             children: [
               _typeBadge(q.type),
+              const SizedBox(width: 8),
+              Text('第 ${index + 1} 题',
+                  style: const TextStyle(
+                      fontSize: 11, color: Tokens.textTertiary)),
               const SizedBox(width: 8),
               if (q.difficulty > 0.66)
                 const Text('困难', style: TextStyle(fontSize: 10, color: Tokens.danger)),
@@ -840,19 +922,34 @@ class _PracticePageState extends State<PracticePage> {
 
   Widget _submitBar() {
     if (_questions.isEmpty || _submitted) return const SizedBox.shrink();
+    final answered = _answeredCount();
+    final allDone = answered == _questions.length;
     return GlassCard(
       margin: const EdgeInsets.only(bottom: 14),
       child: Row(
         children: [
+          const Icon(Icons.timer_rounded, size: 16, color: Tokens.brandBlue),
+          const SizedBox(width: 6),
+          Text(_elapsed,
+              style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Tokens.textPrimary)),
+          const SizedBox(width: 14),
           Expanded(
-            child: Text('已作答 ${_answeredCount()} / ${_questions.length}',
-                style: const TextStyle(
-                    fontSize: 12, color: Tokens.textSecondary)),
+            child: Text(
+              allDone
+                  ? '已全部作答，可以交卷了'
+                  : '已作答 $answered / ${_questions.length}',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: allDone ? Tokens.success : Tokens.textSecondary),
+            ),
           ),
           GlassButton(
             label: '交卷',
             icon: Icons.task_alt_rounded,
-            onPressed: _answeredCount() == 0 ? null : _submit,
+            onPressed: answered == 0 ? null : _submit,
           ),
         ],
       ),
