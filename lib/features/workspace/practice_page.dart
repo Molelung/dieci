@@ -217,7 +217,13 @@ class _PracticePageState extends State<PracticePage> {
       _toast('题库为空，请先「生成题目」');
       return;
     }
-    final pool = List<Question>.from(nb.questions)..shuffle();
+    var pool = List<Question>.from(nb.questions);
+    if (_types.isNotEmpty) {
+      final wanted = _types;
+      final typed = pool.where((q) => wanted.contains(q.type)).toList();
+      if (typed.isNotEmpty) pool = typed;
+    }
+    pool.shuffle();
     setState(() {
       _questions = pool.take(20).toList();
       _answers = {};
@@ -225,7 +231,7 @@ class _PracticePageState extends State<PracticePage> {
       _submitted = false;
       _bankMode = true;
       _presetMode = false;
-      _scopeName = '离线题库（${_questions.length} 题）';
+      _scopeName = '离线题库（${_questions.length} 题${_types.isNotEmpty ? ' · 按所选题型' : ''}）';
       _errors = [];
     });
     _startTimer();
