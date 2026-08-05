@@ -67,6 +67,47 @@ class QuizValidator {
       seenQ.add(key);
     }
 
+    // 考点词覆盖：每个用户指定考点必须至少出现在一道题中
+    final keywords = req.keywords
+        .split(RegExp(r'[\s,，。;；、/]+'))
+        .map((k) => k.trim())
+        .where((k) => k.isNotEmpty)
+        .toList();
+    for (final k in keywords) {
+      final covered = questions.any((q) =>
+          q.question.contains(k) ||
+          q.answer.contains(k) ||
+          q.explain.contains(k) ||
+          q.options.any((o) => o.contains(k)));
+      if (!covered) {
+        errors.add('考点词「$k」未被任何题目覆盖，请保证每个考点词至少出现在一道题中');
+      }
+    }
+
+    // 难度分布：简单/困难需要过半题目落在对应区间
+    if (req.difficulty == '困难') {
+      final hard =
+          questions.where((q) => q.difficulty >= 0.66).length;
+      if (hard < (questions.length / 2).ceil()) {
+        errors.add('难度要求「困难」，但困难题（difficulty≥0.66）不足一半');
+      }
+    } else if (req.difficulty == '简单') {
+      final easy =
+          questions.where((q) => q.difficulty <= 0.33).length;
+      if (easy < (questions.length / 2).ceil()) {
+        errors.add('难度要求「简单」，但简单题（difficulty≤0.33）不足一半');
+      }
+    }
+
+    // 出处覆盖率：过半题目应有材料出处（防幻觉/越界）
+    if (questions.length >= 3) {
+      final withCite =
+          questions.where((q) => (q.citation?.isNotEmpty ?? false)).length;
+      if (withCite < (questions.length * 0.5).ceil()) {
+        errors.add('超过一半题目缺少出处 citation，请为每题填写材料出处');
+      }
+    }
+
     // 题量与题型一致性
     final byType = <QuestionType, int>{};
     for (final q in questions) {

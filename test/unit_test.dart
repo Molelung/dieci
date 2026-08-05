@@ -106,5 +106,64 @@ void main() {
       final errs = QuizValidator.validate(qs, req);
       expect(errs.any((e) => e.contains('答案不在选项中')), isTrue);
     });
+
+    test('考点词未被覆盖时报错', () {
+      final qs = [
+        Question(id: '1', type: QuestionType.single, question: '什么是机器学习', options: ['A', 'B', 'C', 'D'], answer: 'A', explain: 'x', citation: 'src'),
+      ];
+      final req = QuizRequest(
+        types: {QuestionType.single},
+        totalCount: 1,
+        difficulty: '中等',
+        keywords: '变压器',
+        scope: '全部',
+      );
+      final errs = QuizValidator.validate(qs, req);
+      expect(errs.any((e) => e.contains('考点词「变压器」')), isTrue);
+    });
+
+    test('困难难度分布不足时报错', () {
+      final qs = List.generate(
+          4,
+          (i) => Question(
+              id: '$i',
+              type: QuestionType.single,
+              question: 'q$i',
+              options: ['A', 'B', 'C', 'D'],
+              answer: 'A',
+              explain: 'x',
+              difficulty: 0.3,
+              citation: 's'));
+      final req = QuizRequest(
+        types: {QuestionType.single},
+        totalCount: 4,
+        difficulty: '困难',
+        keywords: '',
+        scope: '全部',
+      );
+      final errs = QuizValidator.validate(qs, req);
+      expect(errs.any((e) => e.contains('困难题')), isTrue);
+    });
+
+    test('出处覆盖率不足时报错', () {
+      final qs = List.generate(
+          4,
+          (i) => Question(
+              id: '$i',
+              type: QuestionType.single,
+              question: 'q$i',
+              options: ['A', 'B', 'C', 'D'],
+              answer: 'A',
+              explain: 'x'));
+      final req = QuizRequest(
+        types: {QuestionType.single},
+        totalCount: 4,
+        difficulty: '中等',
+        keywords: '',
+        scope: '全部',
+      );
+      final errs = QuizValidator.validate(qs, req);
+      expect(errs.any((e) => e.contains('缺少出处')), isTrue);
+    });
   });
 }
