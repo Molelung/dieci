@@ -71,6 +71,17 @@ class _ChatPageState extends State<ChatPage> {
     }
     final material = relevant.map((c) => '[${c.index}] ${c.text}').join('\n\n');
 
+    // 最近对话历史（多轮记忆）：取本次发送之前的最近 6 条，截断超长
+    final history = <String>[];
+    final prev = nb.chatMessages.take(nb.chatMessages.length - 1).toList();
+    final start = prev.length > 6 ? prev.length - 6 : 0;
+    for (final m in prev.sublist(start)) {
+      final role = m.role == 'user' ? '用户' : '助手';
+      final text = m.text.length > 240 ? '${m.text.substring(0, 240)}…' : m.text;
+      if (text.trim().isEmpty) continue;
+      history.add('$role：$text');
+    }
+
     final modelMsg = ChatMessage(
       role: 'model',
       text: '',
@@ -87,7 +98,7 @@ class _ChatPageState extends State<ChatPage> {
     try {
       _sub = client
           .streamGenerate(
-            contents: [AiMessage('user', Prompts.chatUser(material, text))],
+            contents: [AiMessage('user', Prompts.chatUser(material, text, history: history))],
             system: Prompts.chatSystem(),
             temperature: 0.5,
             maxTokens: 2048,

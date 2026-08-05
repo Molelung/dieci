@@ -147,14 +147,14 @@ class _ReviewPageState extends State<ReviewPage> {
     }).length;
     return GlassCard(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      child: Wrap(
+        spacing: 20,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           _stat('${nb.mistakes.length}', '累计错题'),
-          const SizedBox(width: 20),
           _stat('$today', '今日新增'),
-          const SizedBox(width: 20),
           _stat('${nb.questions.length}', '题库题量'),
-          const Spacer(),
           if (nb.mistakes.isNotEmpty)
             GlassButton(
               label: '全部重做',
@@ -438,6 +438,17 @@ class _ReviewPageState extends State<ReviewPage> {
             ],
           ),
           const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (_index + 1) / _deck.length,
+              minHeight: 6,
+              backgroundColor: Colors.white.withValues(alpha: 0.6),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Tokens.brandBlue),
+            ),
+          ),
+          const SizedBox(height: 10),
           Expanded(
             child: _FlipCard(
               question: q,
