@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../ai/gemini_client.dart';
 import '../../ai/prompts.dart';
@@ -439,6 +440,15 @@ class _ChatPageState extends State<ChatPage> {
                             icon: Icons.refresh_rounded,
                             tooltip: '重新生成',
                             onTap: () => _regenerateAt(index),
+                          ),
+                          const SizedBox(width: 6),
+                          _miniAction(
+                            icon: Icons.copy_rounded,
+                            tooltip: '复制',
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: m.text));
+                              _toast('已复制');
+                            },
                           ),
                           const SizedBox(width: 6),
                           _miniAction(

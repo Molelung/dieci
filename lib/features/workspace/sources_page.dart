@@ -173,8 +173,17 @@ class _SourcesPageState extends State<SourcesPage> {
     }
   }
 
-  void _deleteSourceWithUndo(Notebook nb, Source s) {
-    Repo.i.removeSource(nb, s.id);
+  static String _shortTime(String iso) {
+    try {
+      final t = DateTime.parse(iso).toLocal();
+      String two(int v) => v.toString().padLeft(2, '0');
+      return '${t.year}-${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  void _deleteSourceWithUndo(Notebook nb, Source s) {    Repo.i.removeSource(nb, s.id);
     final messenger = ScaffoldMessenger.of(context)..clearSnackBars();
     messenger.showSnackBar(SnackBar(
       content: Text('已删除「${s.name}」'),
@@ -382,7 +391,7 @@ class _SourcesPageState extends State<SourcesPage> {
                         color: Tokens.textPrimary)),
                 const SizedBox(height: 3),
                 Text(
-                  '${s.rawText.length} 字符 · ${s.chunks?.length ?? 0} 分块 · $typeLabel',
+                  '${s.rawText.length} 字符 · ${s.chunks?.length ?? 0} 分块 · $typeLabel · ${_shortTime(s.createdAt)}',
                   style: const TextStyle(
                       fontSize: 11, color: Tokens.textTertiary),
                 ),

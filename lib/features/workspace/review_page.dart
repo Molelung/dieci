@@ -254,18 +254,34 @@ class _ReviewPageState extends State<ReviewPage> {
       );
     }
 
+    final filtered = _mistakeFilter == null
+        ? nb.mistakes
+        : nb.mistakes
+            .where((m) => m.question.type == _mistakeFilter)
+            .toList();
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: nb.mistakes.length + 2,
+      itemCount: 2 + (filtered.isEmpty ? 1 : filtered.length),
       itemBuilder: (context, i) {
         if (i == 0) return _statsCard(nb);
         if (i == 1) return _filterBar();
-        final all = _mistakeFilter == null
-            ? nb.mistakes
-            : nb.mistakes
-                .where((m) => m.question.type == _mistakeFilter)
-                .toList();
-        final m = all[i - 2];
+        if (filtered.isEmpty) {
+          return GlassCard(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: const Row(
+              children: [
+                Icon(Icons.inbox_rounded, size: 18, color: Tokens.textTertiary),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text('该题型暂无错题',
+                      style: TextStyle(
+                          fontSize: 13, color: Tokens.textTertiary)),
+                ),
+              ],
+            ),
+          );
+        }
+        final m = filtered[i - 2];
         final q = m.question;
         final expanded = _expandedMistakeId == m.questionId;
         return GlassCard(
