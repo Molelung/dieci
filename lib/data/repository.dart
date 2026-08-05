@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../utils/crash_log.dart';
@@ -14,6 +15,7 @@ class Repo extends ChangeNotifier {
 
   Future<void> init() async {
     final file = await Storage.notebooksFile();
+    await _dailyBackup(file);
     final content = await Storage.readWithRecovery(file);
     if (content != null) {
       try {
@@ -29,6 +31,42 @@ class Repo extends ChangeNotifier {
       notebooks = [];
     }
     notifyListeners();
+  }
+
+  /// 每日自动备份（保留最近 7 份），防误删/损坏
+  Future<void> _dailyBackup(File source) async {
+    try {
+      if (!source.existsSync()) return;
+      final dir = await Storage.dir();
+      final bkDir =
+          Directory('${dir.path}${Platform.pathSeparator}backups');
+      await bkDir.create(recursive: true);
+      final now = DateTime.now();
+      String two(int v) => v.toString().padLeft(2, '0');
+      final name =
+          'dieci-${now.year}${two(now.month)}${two(now.day)}.json';
+      final target = File('${bkDir.path}${Platform.pathSeparator}$name');
+      if (!target.existsSync()) {
+        await source.copy(target.path);
+      }
+      // 清理 7 天前的备份
+      final cutoff = now.subtract(const Duration(days: 7));
+      await for (final f in bkDir.list()) {
+        if (f is! File) continue;
+        final m =
+            RegExp(r'dieci-(\d{4})(\d{2})(\d{2})\.json').firstMatch(f.uri.pathSegments.last);
+        if (m == null) continue;
+        final date = DateTime.tryParse(
+            '${m.group(1)}-${m.group(2)}-${m.group(3)}');
+        if (date != null && date.isBefore(cutoff)) {
+          try {
+            f.deleteSync();
+          } catch (_) {}
+        }
+      }
+    } catch (e) {
+      CrashLog.log('每日备份失败: $e');
+    }
   }
 
   Notebook createNotebook(String name, int gradientIndex) {
