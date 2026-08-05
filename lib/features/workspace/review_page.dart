@@ -767,6 +767,7 @@ class _FlipCard extends StatelessWidget {
   }) {
     return Container(
       width: double.infinity,
+      alignment: Alignment.center,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: gradient,
@@ -779,39 +780,41 @@ class _FlipCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 34, color: Colors.white70),
-          const SizedBox(height: 18),
-          Text(
-            main,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 17,
-              height: 1.6,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          if (sub.isNotEmpty) ...[
-            const SizedBox(height: 12),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 34, color: Colors.white70),
+            const SizedBox(height: 18),
             Text(
-              sub,
+              main,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
+              style: const TextStyle(
+                fontSize: 17,
                 height: 1.6,
-                color: Colors.white.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
             ),
+            if (sub.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                sub,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.6,
+                  color: Colors.white.withValues(alpha: 0.85),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Text('点击翻面',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.6))),
           ],
-          const SizedBox(height: 16),
-          Text('点击翻面',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.6))),
-        ],
+        ),
       ),
     );
   }
