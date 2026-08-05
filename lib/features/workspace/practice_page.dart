@@ -705,6 +705,12 @@ class _PracticePageState extends State<PracticePage> {
               ],
             ),
           ),
+          GlassButton(
+            label: '再刷一组',
+            icon: Icons.refresh_rounded,
+            style: GlassButtonStyle.outline,
+            onPressed: _generate,
+          ),
         ],
       ),
     );
