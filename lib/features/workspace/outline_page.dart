@@ -446,6 +446,13 @@ class _OutlinePageState extends State<OutlinePage> {
                       style: GlassButtonStyle.ghost,
                       onPressed: _stop,
                     ),
+                  if (!_generating && _status.contains('失败'))
+                    GlassButton(
+                      label: '重试',
+                      icon: Icons.refresh_rounded,
+                      style: GlassButtonStyle.outline,
+                      onPressed: _generate,
+                    ),
                   if (hasOutline && !_generating)
                     GlassButton(
                       label: '对勾选范围出题（${_selected.length}）',
