@@ -41,7 +41,7 @@ class _OutlinePageState extends State<OutlinePage> {
         .expand((s) => s.chunks ?? <Chunk>[])
         .toList()
       ..sort((a, b) => a.index.compareTo(b.index));
-    return Chunker.selectRelevant(all, topic);
+    return Chunker.selectRelevant(all, topic, maxChars: 12000);
   }
 
   Future<void> _generate() async {

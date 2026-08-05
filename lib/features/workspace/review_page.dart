@@ -7,6 +7,7 @@ import '../../core/widgets/glass_chip.dart';
 import '../../core/widgets/hero_art.dart';
 import '../../data/repository.dart';
 import '../../models/models.dart';
+import 'practice_page.dart';
 
 class ReviewPage extends StatefulWidget {
   final String notebookId;
@@ -121,6 +122,59 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   // ── 错题本 ──────────────────────────────────────────────
+  Widget _statsCard(Notebook nb) {
+    final now = DateTime.now();
+    final today = nb.mistakes.where((m) {
+      final d = DateTime.tryParse(m.answeredAt);
+      if (d == null) return false;
+      return d.year == now.year && d.month == now.month && d.day == now.day;
+    }).length;
+    return GlassCard(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          _stat('${nb.mistakes.length}', '累计错题'),
+          const SizedBox(width: 20),
+          _stat('$today', '今日新增'),
+          const SizedBox(width: 20),
+          _stat('${nb.questions.length}', '题库题量'),
+          const Spacer(),
+          if (nb.mistakes.isNotEmpty)
+            GlassButton(
+              label: '全部重做',
+              icon: Icons.replay_rounded,
+              style: GlassButtonStyle.outline,
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PracticePage(
+                    notebookId: widget.notebookId,
+                    presetMistakeIds:
+                        nb.mistakes.map((m) => m.questionId).toList(),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stat(String value, String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value,
+            style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Tokens.textPrimary)),
+        Text(label,
+            style: const TextStyle(fontSize: 11, color: Tokens.textTertiary)),
+      ],
+    );
+  }
+
   Widget _mistakePanel(Notebook nb) {
     if (nb.mistakes.isEmpty) {
       return Center(
@@ -153,9 +207,10 @@ class _ReviewPageState extends State<ReviewPage> {
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: nb.mistakes.length,
+      itemCount: nb.mistakes.length + 1,
       itemBuilder: (context, i) {
-        final m = nb.mistakes[i];
+        if (i == 0) return _statsCard(nb);
+        final m = nb.mistakes[i - 1];
         final q = m.question;
         final expanded = _expandedMistakeId == m.questionId;
         return GlassCard(
@@ -260,6 +315,21 @@ class _ReviewPageState extends State<ReviewPage> {
                         });
                         _startFlash(nb);
                       },
+                    ),
+                    const SizedBox(width: 8),
+                    GlassButton(
+                      label: '重做',
+                      icon: Icons.replay_rounded,
+                      style: GlassButtonStyle.ghost,
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PracticePage(
+                            notebookId: widget.notebookId,
+                            presetMistakeIds: [m.questionId],
+                          ),
+                        ),
+                      ),
                     ),
                     const Spacer(),
                     GlassButton(

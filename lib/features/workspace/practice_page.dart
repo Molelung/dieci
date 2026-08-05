@@ -18,12 +18,14 @@ class PracticePage extends StatefulWidget {
   final String notebookId;
   final List<String>? presetScope;
   final String? presetSourceId;
+  final List<String>? presetMistakeIds;
 
   const PracticePage({
     super.key,
     required this.notebookId,
     this.presetScope,
     this.presetSourceId,
+    this.presetMistakeIds,
   });
 
   @override
@@ -39,6 +41,7 @@ class _PracticePageState extends State<PracticePage> {
   int _count = 10;
   int _round = 0;
   bool _generating = false;
+  bool _presetMode = false;
   List<String> _errors = [];
   List<Question> _questions = [];
   Map<String, dynamic> _answers = {}; // qid -> String | Set<String>
@@ -68,7 +71,16 @@ class _PracticePageState extends State<PracticePage> {
   void initState() {
     super.initState();
     final nb = Repo.i.notebook(widget.notebookId);
-    if (widget.presetSourceId != null) {
+    if (widget.presetMistakeIds != null && widget.presetMistakeIds!.isNotEmpty) {
+      // 错题重做模式：直接从错题本加载，无需 AI 生成
+      final ids = widget.presetMistakeIds!.toSet();
+      _questions = nb.mistakes
+          .where((m) => ids.contains(m.questionId))
+          .map((m) => m.question)
+          .toList();
+      _presetMode = true;
+      _scopeName = '错题重做（${_questions.length} 题）';
+    } else if (widget.presetSourceId != null) {
       final src = nb.sources
           .where((s) => s.id == widget.presetSourceId)
           .firstOrNull;
@@ -91,12 +103,17 @@ class _PracticePageState extends State<PracticePage> {
         .expand((s) => s.chunks ?? <Chunk>[])
         .toList()
       ..sort((a, b) => a.index.compareTo(b.index));
-    final relevant =
-        Chunker.selectRelevant(chunks, _keywordController.text.trim());
+    final relevant = Chunker.selectRelevant(
+        chunks, _keywordController.text.trim(),
+        maxChars: 8000);
     return relevant.map((c) => '[${c.index}] ${c.text}').join('\n\n');
   }
 
   Future<void> _generate() async {
+    if (_presetMode) {
+      _toast('错题重做模式已锁定，直接作答即可');
+      return;
+    }
     if (_types.isEmpty) {
       _toast('至少选择一种题型');
       return;
@@ -222,16 +239,25 @@ class _PracticePageState extends State<PracticePage> {
       }
     }
     final nb = Repo.i.notebook(widget.notebookId);
-    for (final q in _questions) {
-      if (!_isCorrect(q)) {
-        nb.mistakes.insert(
-          0,
-          Mistake(
-            questionId: q.id,
-            questionJson: jsonEncode(q.toJson()),
-            answeredAt: DateTime.now().toIso8601String(),
-          ),
-        );
+    if (_presetMode) {
+      // 重做模式：答对的移出错题本，答错的保留
+      for (final q in _questions) {
+        final idx = nb.mistakes.indexWhere((m) => m.questionId == q.id);
+        if (idx == -1) continue;
+        if (_isCorrect(q)) nb.mistakes.removeAt(idx);
+      }
+    } else {
+      for (final q in _questions) {
+        if (!_isCorrect(q)) {
+          nb.mistakes.insert(
+            0,
+            Mistake(
+              questionId: q.id,
+              questionJson: jsonEncode(q.toJson()),
+              answeredAt: DateTime.now().toIso8601String(),
+            ),
+          );
+        }
       }
     }
     Repo.i.save();
@@ -281,6 +307,24 @@ class _PracticePageState extends State<PracticePage> {
   }
 
   Widget _paramCard() {
+    if (_presetMode) {
+      return GlassCard(
+        margin: const EdgeInsets.only(bottom: 14),
+        child: Row(
+          children: [
+            const Icon(Icons.replay_rounded, size: 20, color: Tokens.brandBlue),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '错题重做：共 ${_questions.length} 题，答对即自动移出错题本。',
+                style: const TextStyle(
+                    fontSize: 13, color: Tokens.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return GlassCard(
       margin: const EdgeInsets.only(bottom: 14),
       child: Column(

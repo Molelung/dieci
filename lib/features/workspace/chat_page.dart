@@ -23,6 +23,7 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
+  final Map<String, String> _chunkMap = {};
   StreamSubscription<String>? _sub;
   bool _streaming = false;
   int _usedChunks = 0;
@@ -56,8 +57,12 @@ class _ChatPageState extends State<ChatPage> {
         .expand((s) => s.chunks ?? <Chunk>[])
         .toList()
       ..sort((a, b) => a.index.compareTo(b.index));
-    final relevant = Chunker.selectRelevant(chunks, text);
+    final relevant = Chunker.selectRelevant(chunks, text, maxChars: 6000);
     _usedChunks = relevant.length;
+    _chunkMap.clear();
+    for (final c in relevant) {
+      _chunkMap['${c.index}'] = '${c.sourceName ?? '材料'}\n\n${c.text}';
+    }
     final material = relevant.map((c) => '[${c.index}] ${c.text}').join('\n\n');
 
     final modelMsg = ChatMessage(
@@ -325,15 +330,115 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 const SizedBox(height: 6),
               ],
-              Text(
-                m.text,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  height: 1.6,
-                  color: Tokens.textPrimary,
-                ),
+              Text.rich(
+                isUser
+                    ? TextSpan(
+                        text: m.text,
+                        style: const TextStyle(
+                            fontSize: 13.5,
+                            height: 1.6,
+                            color: Tokens.textPrimary))
+                    : TextSpan(children: _buildSpans(m.text)),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 渲染回答中的 [n] 引用为可点击 chip，点击悬浮原文
+  List<InlineSpan> _buildSpans(String text) {
+    final spans = <InlineSpan>[];
+    final re = RegExp(r'\[(\d+)\]');
+    var last = 0;
+    for (final m in re.allMatches(text)) {
+      if (m.start > last) {
+        spans.add(TextSpan(text: text.substring(last, m.start)));
+      }
+      final id = m.group(1)!;
+      final hasChunk = _chunkMap.containsKey(id);
+      spans.add(WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: GestureDetector(
+          onTap: hasChunk ? () => _showCitation(id) : null,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: hasChunk
+                  ? Tokens.brandBlue.withValues(alpha: 0.12)
+                  : Tokens.textTertiary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: hasChunk
+                    ? Tokens.brandBlue.withValues(alpha: 0.35)
+                    : Colors.transparent,
+              ),
+            ),
+            child: Text('[$id]',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: hasChunk ? Tokens.brandBlue : Tokens.textTertiary)),
+          ),
+        ),
+      ));
+      last = m.end;
+    }
+    if (last < text.length) {
+      spans.add(TextSpan(text: text.substring(last)));
+    }
+    if (spans.isEmpty) spans.add(TextSpan(text: text));
+    return spans;
+  }
+
+  void _showCitation(String id) {
+    final content = _chunkMap[id] ?? '（无法定位该引用）';
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        content: GlassCard(
+          radius: 24,
+          blur: 30,
+          padding: const EdgeInsets.all(20),
+          child: SizedBox(
+            width: 480,
+            height: 300,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.format_quote_rounded,
+                        size: 18, color: Tokens.brandBlue),
+                    const SizedBox(width: 8),
+                    Text('引用原文 · #$id',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Tokens.textPrimary)),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(ctx),
+                      child: const Icon(Icons.close_rounded,
+                          size: 18, color: Tokens.textTertiary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Text(content,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.6,
+                            color: Tokens.textSecondary)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
